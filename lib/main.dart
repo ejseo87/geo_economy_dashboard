@@ -1,4 +1,6 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
+import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart';
+import 'package:geo_economy_dashboard/common/services/network_service.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/settings/repos/settings_repo.dart';
@@ -20,6 +22,22 @@ void main() async {
   } catch (e) {
     AppLogger.warning('Firebase initialization failed', e);
     // Firebase 초기화 실패 시에도 앱은 계속 실행
+  }
+
+  // 오프라인 캐시 서비스 초기화
+  try {
+    await OfflineCacheService.instance.initialize();
+    AppLogger.info('Offline cache service initialized');
+  } catch (e) {
+    AppLogger.error('Failed to initialize offline cache service: $e');
+  }
+
+  // 네트워크 서비스 초기화
+  try {
+    await NetworkService.instance.initialize();
+    AppLogger.info('Network service initialized');
+  } catch (e) {
+    AppLogger.error('Failed to initialize network service: $e');
   }
 
   final preferences = await SharedPreferences.getInstance();

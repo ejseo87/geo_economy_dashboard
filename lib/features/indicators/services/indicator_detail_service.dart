@@ -1,62 +1,165 @@
 import 'dart:math' as math;
 import 'package:geo_economy_dashboard/common/logger.dart';
+import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart';
+import 'package:geo_economy_dashboard/common/services/network_service.dart';
 import '../models/indicator_metadata.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../../worldbank/repositories/indicator_repository.dart';
 import '../../countries/models/country.dart';
 
-/// 지표 상세 정보 서비스
+/// 지표 상세 정보 서비스 (오프라인 캐시 지원)
 class IndicatorDetailService {
   final IndicatorRepository _repository;
+  final OfflineCacheService _cacheService;
+  final NetworkService _networkService;
 
-  IndicatorDetailService({IndicatorRepository? repository})
-      : _repository = repository ?? IndicatorRepository();
+  IndicatorDetailService({
+    IndicatorRepository? repository,
+    OfflineCacheService? cacheService,
+    NetworkService? networkService,
+  }) : _repository = repository ?? IndicatorRepository(),
+       _cacheService = cacheService ?? OfflineCacheService.instance,
+       _networkService = networkService ?? NetworkService.instance;
 
-  /// 지표 상세 정보 생성
+  /// 지표 상세 정보 생성 (캐시 우선 로딩)
   Future<IndicatorDetail> getIndicatorDetail({
     required IndicatorCode indicatorCode,
     required Country country,
     int historyYears = 10,
+    bool forceRefresh = false,
   }) async {
     try {
       AppLogger.debug('[IndicatorDetailService] Loading detail for ${indicatorCode.name} in ${country.nameKo}');
 
-      // 메타데이터 생성
-      final metadata = _getIndicatorMetadata(indicatorCode);
+      // 1. 강제 새로고침이 아닌 경우 캐시 먼저 확인
+      if (!forceRefresh) {
+        final cachedDetail = await _cacheService.getCachedIndicatorDetail(indicatorCode, country);
+        if (cachedDetail != null) {
+          AppLogger.debug('[IndicatorDetailService] Returning cached detail for ${indicatorCode.name}');
+          
+          // 백그라운드에서 데이터 업데이트 (네트워크가 좋을 때만)
+          if (_networkService.hasGoodConnection) {
+            _updateCacheInBackground(indicatorCode, country, historyYears);
+          }
+          
+          return cachedDetail;
+        }
+      }
 
-      // 히스토리컬 데이터 수집
-      final historicalData = await _getHistoricalData(indicatorCode, country.code, historyYears);
+      // 2. 네트워크 상태 확인
+      final isOnline = _networkService.isOnline;
+      
+      if (!isOnline && !forceRefresh) {
+        // 오프라인이고 캐시가 없는 경우 기본 데이터 반환
+        AppLogger.warning('[IndicatorDetailService] Offline with no cache, returning default data');
+        return _createDefaultIndicatorDetail(indicatorCode, country);
+      }
 
-      // 현재값과 순위 계산
-      final currentValue = historicalData.isNotEmpty ? historicalData.last.value : null;
-      final (currentRank, totalCountries) = await _getCurrentRanking(indicatorCode, country.code);
+      // 3. 온라인일 때 데이터 생성
+      final detail = await _generateIndicatorDetail(indicatorCode, country, historyYears);
 
-      // OECD 통계 계산
-      final oecdStats = await _calculateOECDStats(indicatorCode);
+      // 4. 캐시에 저장
+      await _cacheService.cacheIndicatorDetail(indicatorCode, country, detail);
 
-      // 트렌드 분석
-      final trendAnalysis = _analyzeTrends(historicalData, metadata.isHigherBetter);
-
-      final detail = IndicatorDetail(
-        metadata: metadata,
-        countryCode: country.code,
-        countryName: country.nameKo,
-        historicalData: historicalData,
-        currentValue: currentValue,
-        currentRank: currentRank,
-        totalCountries: totalCountries,
-        oecdStats: oecdStats,
-        trendAnalysis: trendAnalysis,
-        lastCalculated: DateTime.now(),
-      );
-
-      AppLogger.info('[IndicatorDetailService] Generated detail with ${historicalData.length} data points');
+      AppLogger.info('[IndicatorDetailService] Generated and cached detail with ${detail.historicalData.length} data points');
       return detail;
 
     } catch (error) {
       AppLogger.error('[IndicatorDetailService] Error generating detail: $error');
+      
+      // 에러 발생 시 캐시된 데이터라도 반환 시도
+      final cachedDetail = await _cacheService.getCachedIndicatorDetail(indicatorCode, country);
+      if (cachedDetail != null) {
+        AppLogger.info('[IndicatorDetailService] Returning cached detail due to error');
+        return cachedDetail;
+      }
+      
       rethrow;
     }
+  }
+
+  /// 실제 지표 상세 정보 생성 (기존 로직)
+  Future<IndicatorDetail> _generateIndicatorDetail(
+    IndicatorCode indicatorCode,
+    Country country,
+    int historyYears,
+  ) async {
+    // 메타데이터 생성
+    final metadata = _getIndicatorMetadata(indicatorCode);
+
+    // 히스토리컬 데이터 수집
+    final historicalData = await _getHistoricalData(indicatorCode, country.code, historyYears);
+
+    // 현재값과 순위 계산
+    final currentValue = historicalData.isNotEmpty ? historicalData.last.value : null;
+    final (currentRank, totalCountries) = await _getCurrentRanking(indicatorCode, country.code);
+
+    // OECD 통계 계산
+    final oecdStats = await _calculateOECDStats(indicatorCode);
+
+    // 트렌드 분석
+    final trendAnalysis = _analyzeTrends(historicalData, metadata.isHigherBetter);
+
+    return IndicatorDetail(
+      metadata: metadata,
+      countryCode: country.code,
+      countryName: country.nameKo,
+      historicalData: historicalData,
+      currentValue: currentValue,
+      currentRank: currentRank,
+      totalCountries: totalCountries,
+      oecdStats: oecdStats,
+      trendAnalysis: trendAnalysis,
+      lastCalculated: DateTime.now(),
+    );
+  }
+
+  /// 기본 지표 상세 정보 생성 (오프라인용)
+  IndicatorDetail _createDefaultIndicatorDetail(
+    IndicatorCode indicatorCode,
+    Country country,
+  ) {
+    final metadata = _getIndicatorMetadata(indicatorCode);
+    
+    return IndicatorDetail(
+      metadata: metadata,
+      countryCode: country.code,
+      countryName: country.nameKo,
+      historicalData: [],
+      currentValue: null,
+      currentRank: null,
+      totalCountries: 0,
+      oecdStats: const OECDStats(
+        median: 0, mean: 0, standardDeviation: 0,
+        q1: 0, q3: 0, min: 0, max: 0,
+        totalCountries: 0, rankings: [],
+      ),
+      trendAnalysis: const TrendAnalysis(
+        shortTerm: TrendDirection.stable,
+        mediumTerm: TrendDirection.stable,
+        longTerm: TrendDirection.stable,
+        volatility: 0,
+        correlation: 0,
+        insights: [],
+        summary: '오프라인 상태에서는 트렌드 분석을 사용할 수 없습니다.',
+      ),
+      lastCalculated: DateTime.now(),
+    );
+  }
+
+  /// 백그라운드에서 캐시 업데이트
+  void _updateCacheInBackground(
+    IndicatorCode indicatorCode,
+    Country country,
+    int historyYears,
+  ) {
+    // 비동기로 실행하되 에러는 무시
+    _generateIndicatorDetail(indicatorCode, country, historyYears).then((detail) {
+      _cacheService.cacheIndicatorDetail(indicatorCode, country, detail);
+      AppLogger.debug('[IndicatorDetailService] Background cache update completed for ${indicatorCode.name}');
+    }).catchError((error) {
+      AppLogger.debug('[IndicatorDetailService] Background cache update failed: $error');
+    });
   }
 
   /// 메타데이터 생성
@@ -447,6 +550,114 @@ class IndicatorDetailService {
       'NZL': '뉴질랜드',
     };
     return countryNames[countryCode] ?? countryCode;
+  }
+
+  /// 캐시 새로고침
+  Future<IndicatorDetail> refreshIndicatorDetail({
+    required IndicatorCode indicatorCode,
+    required Country country,
+    int historyYears = 10,
+  }) async {
+    AppLogger.debug('[IndicatorDetailService] Force refreshing detail for ${indicatorCode.name}');
+    return getIndicatorDetail(
+      indicatorCode: indicatorCode,
+      country: country,
+      historyYears: historyYears,
+      forceRefresh: true,
+    );
+  }
+
+  /// 특정 지표의 캐시 삭제
+  Future<void> clearIndicatorCache(IndicatorCode indicatorCode, Country country) async {
+    try {
+      // 구체적인 캐시 키 생성이 필요하지만, 현재는 일반적인 방법 사용
+      AppLogger.debug('[IndicatorDetailService] Clearing cache for ${indicatorCode.name}');
+      // _cacheService.removeCache() 호출 필요
+    } catch (e) {
+      AppLogger.error('[IndicatorDetailService] Failed to clear cache: $e');
+    }
+  }
+
+  /// 모든 캐시 삭제
+  Future<void> clearAllCache() async {
+    try {
+      await _cacheService.clearAllCache();
+      AppLogger.info('[IndicatorDetailService] Cleared all cache');
+    } catch (e) {
+      AppLogger.error('[IndicatorDetailService] Failed to clear all cache: $e');
+    }
+  }
+
+  /// 캐시 통계 조회
+  Future<CacheStats> getCacheStats() async {
+    return _cacheService.getCacheStats();
+  }
+
+  /// 오프라인 모드로 동작 중인지 확인
+  bool get isOfflineMode => _networkService.shouldPreferCache;
+
+  /// 네트워크 상태 확인
+  NetworkStatus get networkStatus => _networkService.currentStatus;
+
+  /// 프리로딩 - 자주 사용되는 데이터 미리 캐시
+  Future<void> preloadCommonIndicators(List<Country> countries) async {
+    if (!_networkService.hasGoodConnection) {
+      AppLogger.debug('[IndicatorDetailService] Skipping preload due to poor connection');
+      return;
+    }
+
+    final commonIndicators = [
+      IndicatorCode.gdpRealGrowth,
+      IndicatorCode.unemployment,
+      IndicatorCode.cpiInflation,
+    ];
+
+    AppLogger.info('[IndicatorDetailService] Starting preload for ${commonIndicators.length} indicators, ${countries.length} countries');
+
+    for (final country in countries) {
+      for (final indicator in commonIndicators) {
+        try {
+          // 캐시가 없는 경우만 로드
+          final cached = await _cacheService.getCachedIndicatorDetail(indicator, country);
+          if (cached == null) {
+            final detail = await _generateIndicatorDetail(indicator, country, 10);
+            await _cacheService.cacheIndicatorDetail(indicator, country, detail);
+            
+            // 네트워크 과부하 방지를 위한 지연
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        } catch (e) {
+          AppLogger.debug('[IndicatorDetailService] Preload failed for ${indicator.name}: $e');
+        }
+      }
+    }
+
+    AppLogger.info('[IndicatorDetailService] Preload completed');
+  }
+
+  /// 백그라운드 캐시 정리
+  Future<void> performMaintenanceTasks() async {
+    try {
+      AppLogger.debug('[IndicatorDetailService] Starting maintenance tasks');
+      
+      // 1. 만료된 캐시 정리
+      final stats = await _cacheService.getCacheStats();
+      if (stats.expiredItems > 0) {
+        // 만료된 캐시 정리 로직 필요
+        AppLogger.info('[IndicatorDetailService] Found ${stats.expiredItems} expired cache items');
+      }
+
+      // 2. 네트워크 상태가 좋을 때 중요한 데이터 업데이트
+      if (_networkService.hasGoodConnection) {
+        // 한국 데이터 우선 업데이트
+        final korea = Country(code: 'KOR', name: 'Korea', nameKo: '한국', flagEmoji: '🇰🇷', region: 'OECD');
+        await preloadCommonIndicators([korea]);
+      }
+
+      AppLogger.info('[IndicatorDetailService] Maintenance tasks completed');
+    } catch (e) {
+      AppLogger.error('[IndicatorDetailService] Maintenance tasks failed: $e');
+    }
   }
 
   /// 리소스 정리

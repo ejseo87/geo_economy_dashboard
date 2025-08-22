@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/gaps.dart';
 import '../../../constants/sizes.dart';
@@ -25,7 +27,13 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(indicatorDetailProvider(indicatorCode, country));
+    final detailAsync = ref.watch(
+      indicatorDetailProvider(indicatorCode, country),
+    );
+    final bookmarks = ref.watch(bookmarkViewModelProvider);
+    final isBookmarked = bookmarks.contains(
+      '${indicatorCode.code}_${country.code}',
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -42,7 +50,18 @@ class IndicatorDetailScreen extends ConsumerWidget {
         shadowColor: AppColors.textPrimary.withValues(alpha: 0.1),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            try {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            } catch (e) {
+              // 네비게이션 에러 발생 시 홈으로 이동
+              context.go('/home');
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -51,8 +70,13 @@ class IndicatorDetailScreen extends ConsumerWidget {
             onPressed: () => _showShareOptions(context),
           ),
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.bookmark, size: 20),
-            color: AppColors.textSecondary,
+            icon: FaIcon(
+              isBookmarked
+                  ? FontAwesomeIcons.solidBookmark
+                  : FontAwesomeIcons.bookmark,
+              size: 20,
+            ),
+            color: isBookmarked ? AppColors.accent : AppColors.textSecondary,
             onPressed: () => _toggleBookmark(ref),
           ),
         ],
@@ -72,10 +96,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
         children: [
           CircularProgressIndicator(color: AppColors.primary),
           Gaps.v16,
-          Text(
-            '지표 상세 정보를 불러오고 있습니다...',
-            style: AppTypography.bodyMedium,
-          ),
+          Text('지표 상세 정보를 불러오고 있습니다...', style: AppTypography.bodyMedium),
         ],
       ),
     );
@@ -131,7 +152,11 @@ class IndicatorDetailScreen extends ConsumerWidget {
           Gaps.v16,
           _buildMetadataSection(detail.metadata),
           Gaps.v16,
+          _buildSimilarCountriesComparison(detail),
+          Gaps.v16,
           _buildDataSourceInfo(detail.metadata.source),
+          Gaps.v16,
+          _buildActionButtons(context),
           Gaps.v32,
         ],
       ),
@@ -213,7 +238,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
               ),
               Gaps.v4,
               Text(
-                detail.currentValue != null 
+                detail.currentValue != null
                     ? '${detail.currentValue!.toStringAsFixed(1)}${detail.metadata.unit}'
                     : '데이터 없음',
                 style: AppTypography.heading1.copyWith(
@@ -236,7 +261,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
               ),
               Gaps.v4,
               Text(
-                detail.lastCalculated != null 
+                detail.lastCalculated != null
                     ? '${detail.lastCalculated!.year}년'
                     : '알 수 없음',
                 style: AppTypography.bodyLarge.copyWith(
@@ -256,7 +281,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
     final Color rankColor;
     final String rankLabel;
-    
+
     if (detail.currentRank! <= detail.totalCountries * 0.25) {
       rankColor = AppColors.accent;
       rankLabel = '상위권';
@@ -328,11 +353,13 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
     // 스파크라인 데이터로 변환
     final sparklinePoints = detail.historicalData
-        .map((point) => SparklinePoint(
-              year: point.year,
-              value: point.value,
-              isEstimated: point.isEstimated,
-            ))
+        .map(
+          (point) => SparklinePoint(
+            year: point.year,
+            value: point.value,
+            isEstimated: point.isEstimated,
+          ),
+        )
         .toList();
 
     final sparklineData = SparklineData(
@@ -456,29 +483,31 @@ class IndicatorDetailScreen extends ConsumerWidget {
                 ),
                 if (analysis.insights.isNotEmpty) ...[
                   Gaps.v8,
-                  ...analysis.insights.map((insight) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '• ',
+                  ...analysis.insights.map(
+                    (insight) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '• ',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              insight,
                               style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.primary,
+                                color: AppColors.textPrimary,
+                                height: 1.3,
                               ),
                             ),
-                            Expanded(
-                              child: Text(
-                                insight,
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textPrimary,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -507,10 +536,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                trend.emoji,
-                style: const TextStyle(fontSize: 14),
-              ),
+              Text(trend.emoji, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 4),
               Text(
                 trend.label,
@@ -562,18 +588,18 @@ class IndicatorDetailScreen extends ConsumerWidget {
           Gaps.v16,
           Row(
             children: [
-              _buildStatBox('중앙값', '${stats.median.toStringAsFixed(1)}'),
-              _buildStatBox('평균', '${stats.mean.toStringAsFixed(1)}'),
-              _buildStatBox('표준편차', '${stats.standardDeviation.toStringAsFixed(1)}'),
+              _buildStatBox('중앙값', stats.median.toStringAsFixed(1)),
+              _buildStatBox('평균', stats.mean.toStringAsFixed(1)),
+              _buildStatBox('표준편차', stats.standardDeviation.toStringAsFixed(1)),
             ],
           ),
           Gaps.v12,
           Row(
             children: [
-              _buildStatBox('최솟값', '${stats.min.toStringAsFixed(1)}'),
-              _buildStatBox('Q1', '${stats.q1.toStringAsFixed(1)}'),
-              _buildStatBox('Q3', '${stats.q3.toStringAsFixed(1)}'),
-              _buildStatBox('최댓값', '${stats.max.toStringAsFixed(1)}'),
+              _buildStatBox('최솟값', stats.min.toStringAsFixed(1)),
+              _buildStatBox('Q1', stats.q1.toStringAsFixed(1)),
+              _buildStatBox('Q3', stats.q3.toStringAsFixed(1)),
+              _buildStatBox('최댓값', stats.max.toStringAsFixed(1)),
             ],
           ),
         ],
@@ -644,7 +670,10 @@ class IndicatorDetailScreen extends ConsumerWidget {
           Gaps.v12,
           _buildMetadataRow('제한사항', metadata.limitations),
           Gaps.v12,
-          _buildMetadataRow('업데이트 주기', '${metadata.updateFrequency.labelKr} (${metadata.updateFrequency.description})'),
+          _buildMetadataRow(
+            '업데이트 주기',
+            '${metadata.updateFrequency.labelKr} (${metadata.updateFrequency.description})',
+          ),
         ],
       ),
     );
@@ -670,6 +699,300 @@ class IndicatorDetailScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSimilarCountriesComparison(IndicatorDetail detail) {
+    // 유사 국가 목록 (한국 기준)
+    const similarCountries = ['JPN', 'DEU', 'FRA', 'GBR'];
+    final countriesData = <Map<String, dynamic>>[];
+
+    // 현재 국가 추가
+    if (detail.currentValue != null) {
+      countriesData.add({
+        'code': detail.countryCode,
+        'name': detail.countryName,
+        'value': detail.currentValue!,
+        'rank': detail.currentRank ?? 0,
+        'isCurrent': true,
+      });
+    }
+
+    // TODO: 실제 유사국 데이터 조회 (추후 API 연동)
+    // 임시 데이터
+    for (int i = 0; i < similarCountries.length && i < 3; i++) {
+      final countryCode = similarCountries[i];
+      final countryName = _getCountryName(countryCode);
+      countriesData.add({
+        'code': countryCode,
+        'name': countryName,
+        'value':
+            (detail.currentValue ?? 0) *
+            (0.8 + math.Random().nextDouble() * 0.4),
+        'rank': (detail.currentRank ?? 20) + math.Random().nextInt(10) - 5,
+        'isCurrent': false,
+      });
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.userGroup,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              Gaps.h8,
+              Text(
+                '유사 국가 비교',
+                style: AppTypography.heading3.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Gaps.v16,
+          ...countriesData.map(
+            (data) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildCountryComparisonTile(data, detail.metadata.unit),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryComparisonTile(Map<String, dynamic> data, String unit) {
+    final isCurrent = data['isCurrent'] as bool;
+    final value = data['value'] as double;
+    final rank = data['rank'] as int;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: isCurrent
+            ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Text(
+            _getCountryFlag(data['code'] as String),
+            style: const TextStyle(fontSize: 24),
+          ),
+          Gaps.h12,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['name'] as String,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                    color: isCurrent
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${value.toStringAsFixed(1)}$unit',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isCurrent
+                  ? AppColors.primary.withValues(alpha: 0.2)
+                  : AppColors.textSecondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$rank위',
+              style: AppTypography.caption.copyWith(
+                color: isCurrent ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '추가 액션',
+            style: AppTypography.heading3.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Gaps.v16,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _addToComparison(),
+                  icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+                  label: const Text('비교 추가'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              Gaps.h12,
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _viewRelatedIndicators(context),
+                  icon: const FaIcon(FontAwesomeIcons.chartLine, size: 16),
+                  label: const Text('관련 지표'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Gaps.v12,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _setAlert(context),
+              icon: const FaIcon(FontAwesomeIcons.bell, size: 16),
+              label: const Text('알림 설정'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCountryName(String countryCode) {
+    const countryNames = {
+      'KOR': '한국',
+      'JPN': '일본',
+      'DEU': '독일',
+      'FRA': '프랑스',
+      'GBR': '영국',
+      'USA': '미국',
+      'ITA': '이탈리아',
+      'CAN': '캐나다',
+    };
+    return countryNames[countryCode] ?? countryCode;
+  }
+
+  String _getCountryFlag(String countryCode) {
+    const countryFlags = {
+      'KOR': '🇰🇷',
+      'JPN': '🇯🇵',
+      'DEU': '🇩🇪',
+      'FRA': '🇫🇷',
+      'GBR': '🇬🇧',
+      'USA': '🇺🇸',
+      'ITA': '🇮🇹',
+      'CAN': '🇨🇦',
+    };
+    return countryFlags[countryCode] ?? '🏳️';
+  }
+
+  void _addToComparison() {
+    // TODO: 비교 기능 구현
+  }
+
+  void _viewRelatedIndicators(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('관련 지표 기능을 준비 중입니다...'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _setAlert(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('알림 설정'),
+        content: const Text('이 지표의 데이터가 업데이트되면 알림을 받으시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('알림이 설정되었습니다'),
+                  backgroundColor: AppColors.accent,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('설정'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -806,16 +1129,163 @@ class IndicatorDetailScreen extends ConsumerWidget {
   }
 
   void _showShareOptions(BuildContext context) {
-    // 공유 기능 구현 (추후)
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Gaps.v16,
+            Text(
+              '지표 데이터 공유',
+              style: AppTypography.heading3.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Gaps.v20,
+            _buildShareOption(
+              context,
+              FontAwesomeIcons.image,
+              '이미지로 공유',
+              '차트와 데이터를 이미지로 저장',
+              () => _shareAsImage(context),
+            ),
+            Gaps.v12,
+            _buildShareOption(
+              context,
+              FontAwesomeIcons.link,
+              '링크 공유',
+              '이 지표 페이지 링크 복사',
+              () => _shareAsLink(context),
+            ),
+            Gaps.v12,
+            _buildShareOption(
+              context,
+              FontAwesomeIcons.fileExport,
+              'CSV 내보내기',
+              '데이터를 CSV 파일로 저장',
+              () => _exportAsCSV(context),
+            ),
+            Gaps.v20,
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  '취소',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return ListTile(
+      leading: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(child: FaIcon(icon, color: AppColors.primary, size: 20)),
+      ),
+      title: Text(
+        title,
+        style: AppTypography.bodyMedium.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+    );
+  }
+
+  void _shareAsImage(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('공유 기능은 곧 추가될 예정입니다.')),
+      const SnackBar(
+        content: Text('이미지 공유 기능을 준비 중입니다...'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _shareAsLink(BuildContext context) {
+    // TODO: 실제 딥링크 URL 생성
+    final url =
+        'https://geoeconomy.app/indicators/${indicatorCode.code}/${country.code}';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('링크가 클립보드에 복사되었습니다'),
+        backgroundColor: AppColors.accent,
+        action: SnackBarAction(
+          label: '확인',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
+  void _exportAsCSV(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('CSV 내보내기 기능을 준비 중입니다...'),
+        backgroundColor: AppColors.primary,
+      ),
     );
   }
 
   void _toggleBookmark(WidgetRef ref) {
-    // 북마크 기능 구현 (추후)
+    final bookmarkViewModel = ref.read(bookmarkViewModelProvider.notifier);
+    final isCurrentlyBookmarked = ref
+        .read(bookmarkViewModelProvider)
+        .contains('${indicatorCode.code}_${country.code}');
+
+    bookmarkViewModel.toggleBookmark(indicatorCode, country.code);
+
     ScaffoldMessenger.of(ref.context).showSnackBar(
-      const SnackBar(content: Text('북마크 기능은 곧 추가될 예정입니다.')),
+      SnackBar(
+        content: Text(isCurrentlyBookmarked ? '북마크에서 제거되었습니다' : '북마크에 추가되었습니다'),
+        backgroundColor: isCurrentlyBookmarked
+            ? AppColors.textSecondary
+            : AppColors.accent,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 

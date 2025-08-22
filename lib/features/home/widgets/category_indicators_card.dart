@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
@@ -9,6 +10,7 @@ import '../view_models/all_indicators_view_model.dart';
 import '../view_models/sparkline_view_model.dart';
 import '../widgets/sparkline_chart.dart';
 import '../../worldbank/models/indicator_codes.dart';
+import '../../countries/view_models/selected_country_provider.dart';
 
 /// 카테고리별 지표 표시 카드
 class CategoryIndicatorsCard extends ConsumerWidget {
@@ -143,7 +145,10 @@ class CategoryIndicatorsCard extends ConsumerWidget {
       indicator.insight.performance,
     );
     
-    return ListTile(
+    return Builder(
+      builder: (context) => Consumer(
+        builder: (context, ref, child) => ListTile(
+          onTap: () => _navigateToIndicatorDetail(context, ref, indicator),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 8,
@@ -212,6 +217,8 @@ class CategoryIndicatorsCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -372,6 +379,26 @@ class CategoryIndicatorsCard extends ConsumerWidget {
         return '보통';
       case PerformanceLevel.poor:
         return '미흡';
+    }
+  }
+
+  void _navigateToIndicatorDetail(BuildContext context, WidgetRef ref, IndicatorComparison indicator) {
+    // 지표 코드로부터 IndicatorCode enum을 찾기
+    final indicatorCode = _getIndicatorCodeFromString(indicator.indicatorCode);
+    if (indicatorCode == null) return;
+
+    // 현재 선택된 국가 정보 가져오기
+    final selectedCountry = ref.read(selectedCountryProvider);
+
+    // GoRouter를 사용한 네비게이션
+    context.go('/indicator/${indicatorCode.code}/${selectedCountry.code}');
+  }
+
+  IndicatorCode? _getIndicatorCodeFromString(String code) {
+    try {
+      return IndicatorCode.values.firstWhere((ic) => ic.code == code);
+    } catch (e) {
+      return null;
     }
   }
 }

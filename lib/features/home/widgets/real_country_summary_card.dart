@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/gaps.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
 import '../models/country_summary.dart';
 import '../view_models/country_summary_view_model.dart';
+import '../../worldbank/models/indicator_codes.dart';
+import '../../countries/view_models/selected_country_provider.dart';
 
 class RealCountrySummaryCard extends ConsumerStatefulWidget {
   const RealCountrySummaryCard({super.key});
@@ -272,15 +275,17 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
     final performanceColor = PerformanceColors.getPerformanceColor(indicator.performance);
     final rankBadgeColor = PerformanceColors.getRankBadgeColor(indicator.percentile);
     
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: performanceColor.withValues(alpha: 0.2),
+    return GestureDetector(
+      onTap: () => _navigateToIndicatorDetail(indicator),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: performanceColor.withValues(alpha: 0.2),
+          ),
         ),
-      ),
       child: Row(
         children: [
           // 이모지 및 성과 표시
@@ -361,6 +366,7 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -417,5 +423,25 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.month}월 ${dateTime.day}일 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _navigateToIndicatorDetail(KeyIndicator indicator) {
+    // 지표 코드로부터 IndicatorCode enum을 찾기
+    final indicatorCode = _getIndicatorCodeFromString(indicator.code);
+    if (indicatorCode == null) return;
+
+    // 현재 선택된 국가 정보 가져오기
+    final selectedCountry = ref.read(selectedCountryProvider);
+
+    // GoRouter를 사용한 네비게이션
+    context.go('/indicator/${indicatorCode.code}/${selectedCountry.code}');
+  }
+
+  IndicatorCode? _getIndicatorCodeFromString(String code) {
+    try {
+      return IndicatorCode.values.firstWhere((ic) => ic.code == code);
+    } catch (e) {
+      return null;
+    }
   }
 }
