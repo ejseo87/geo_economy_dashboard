@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "900150454579",
+    "project_id": "geo-economy-dashboard",
+    "storage_bucket": "geo-economy-dashboard.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900150454579:android:b7265c6bdb9dc335173646",
+        "android_client_info": {
+          "package_name": "com.example.geo_economy_dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAETz1TyytEPcLXUtdH2KRhJkh4FaxCi2E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
