@@ -1,6 +1,8 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart';
 import 'package:geo_economy_dashboard/common/services/network_service.dart';
+import 'package:geo_economy_dashboard/features/favorites/services/favorites_service.dart';
+import 'package:geo_economy_dashboard/features/notifications/services/notification_service.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/settings/repos/settings_repo.dart';
@@ -38,6 +40,22 @@ void main() async {
     AppLogger.info('Network service initialized');
   } catch (e) {
     AppLogger.error('Failed to initialize network service: $e');
+  }
+
+  // 즐겨찾기 서비스 초기화
+  try {
+    await FavoritesService.instance.initialize();
+    AppLogger.info('Favorites service initialized');
+  } catch (e) {
+    AppLogger.error('Failed to initialize favorites service: $e');
+  }
+
+  // 알림 서비스 초기화
+  try {
+    await NotificationService.instance.initialize();
+    AppLogger.info('Notification service initialized');
+  } catch (e) {
+    AppLogger.error('Failed to initialize notification service: $e');
   }
 
   final preferences = await SharedPreferences.getInstance();

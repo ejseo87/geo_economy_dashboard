@@ -8,6 +8,7 @@ import 'package:geo_economy_dashboard/features/settings/view_models/settings_vie
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import '../../countries/widgets/country_selection_bottom_sheet.dart';
 import '../../countries/view_models/selected_country_provider.dart';
+import '../../notifications/widgets/notification_button.dart';
 import '../models/tab_state.dart';
 import '../view_models/tab_view_model.dart';
 import 'tabs/country_summary_tab.dart';
@@ -68,6 +69,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         centerTitle: true,
         actions: [
+          const NotificationButton(),
           IconButton(
             icon: FaIcon(
               FontAwesomeIcons.gear,

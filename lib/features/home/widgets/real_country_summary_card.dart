@@ -6,19 +6,24 @@ import '../../../constants/colors.dart';
 import '../../../constants/gaps.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
+import '../../../common/widgets/share_card_widget.dart';
 import '../models/country_summary.dart';
 import '../view_models/country_summary_view_model.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../../countries/view_models/selected_country_provider.dart';
+import '../../favorites/models/favorite_item.dart';
+import '../../favorites/widgets/favorites_floating_button.dart';
 
 class RealCountrySummaryCard extends ConsumerStatefulWidget {
   const RealCountrySummaryCard({super.key});
 
   @override
-  ConsumerState<RealCountrySummaryCard> createState() => _RealCountrySummaryCardState();
+  ConsumerState<RealCountrySummaryCard> createState() =>
+      _RealCountrySummaryCardState();
 }
 
-class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard> {
+class _RealCountrySummaryCardState
+    extends ConsumerState<RealCountrySummaryCard> {
   @override
   void initState() {
     super.initState();
@@ -30,7 +35,16 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(countrySummaryViewModelProvider);
-    
+    final selectedCountry = ref.watch(selectedCountryProvider);
+
+    return summaryAsync.when(
+      loading: () => _buildLoadingCard(),
+      error: (error, _) => _buildErrorCard(error),
+      data: (summary) => _buildShareableCard(summary, selectedCountry),
+    );
+  }
+
+  Widget _buildLoadingCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -44,11 +58,61 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
           ),
         ],
       ),
-      child: summaryAsync.when(
-        loading: () => _buildLoadingState(),
-        error: (error, _) => _buildErrorState(error),
-        data: (summary) => _buildSummaryContent(summary),
+      child: _buildLoadingState(),
+    );
+  }
+
+  Widget _buildErrorCard(Object error) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: _buildErrorState(error),
+    );
+  }
+
+  Widget _buildShareableCard(CountrySummary summary, selectedCountry) {
+    final favoriteItem = FavoriteItemFactory.createCountrySummary(
+      country: selectedCountry,
+      indicators: [
+        IndicatorCode.gdpRealGrowth,
+        IndicatorCode.unemployment,
+        IndicatorCode.cpiInflation,
+        IndicatorCode.currentAccount,
+        IndicatorCode.gdpPppPerCapita,
+      ],
+    );
+
+    return Stack(
+      children: [
+        ShareCardWidget(
+          title: '${selectedCountry.nameKo} 경제지표 요약',
+          subtitle: 'OECD 38개국 중 현재 순위',
+          fileName:
+              '${selectedCountry.nameKo}_summary_${DateTime.now().toString().split(' ')[0]}.png',
+          child: _buildSummaryContent(summary),
+        ),
+        // 즐겨찾기 버튼
+        Positioned(
+          top: 16,
+          right: 16,
+          child: FavoriteButton(
+            favoriteItem: favoriteItem,
+            onFavoriteChanged: () {
+              // 즐겨찾기 상태 변경 시 스낵바 표시는 FavoriteButton에서 처리
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -67,9 +131,7 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
         Gaps.v8,
         Text(
           '핵심 5개 지표 데이터 수집 및 백분위 계산',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -82,9 +144,7 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -112,7 +172,9 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
           Gaps.v16,
           ElevatedButton.icon(
             onPressed: () {
-              ref.read(countrySummaryViewModelProvider.notifier).refreshSummary();
+              ref
+                  .read(countrySummaryViewModelProvider.notifier)
+                  .refreshSummary();
             },
             icon: const FaIcon(FontAwesomeIcons.arrowRotateRight, size: 16),
             label: const Text('다시 시도'),
@@ -200,16 +262,14 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
   Widget _buildOverallRanking(CountrySummary summary) {
     final rankingColor = _getOverallRankingColor(summary.overallRanking);
     final rankingIcon = _getOverallRankingIcon(summary.overallRanking);
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: rankingColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: rankingColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: rankingColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -219,11 +279,7 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
               color: rankingColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: FaIcon(
-              rankingIcon,
-              color: rankingColor,
-              size: 20,
-            ),
+            child: FaIcon(rankingIcon, color: rankingColor, size: 20),
           ),
           Gaps.h12,
           Expanded(
@@ -263,18 +319,24 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
           ),
         ),
         Gaps.v12,
-        ...indicators.map((indicator) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildIndicatorTile(indicator),
-        )),
+        ...indicators.map(
+          (indicator) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildIndicatorTile(indicator),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildIndicatorTile(KeyIndicator indicator) {
-    final performanceColor = PerformanceColors.getPerformanceColor(indicator.performance);
-    final rankBadgeColor = PerformanceColors.getRankBadgeColor(indicator.percentile);
-    
+    final performanceColor = PerformanceColors.getPerformanceColor(
+      indicator.performance,
+    );
+    final rankBadgeColor = PerformanceColors.getRankBadgeColor(
+      indicator.percentile,
+    );
+
     return GestureDetector(
       onTap: () => _navigateToIndicatorDetail(indicator),
       child: Container(
@@ -282,90 +344,75 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: performanceColor.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: performanceColor.withValues(alpha: 0.2)),
         ),
-      child: Row(
-        children: [
-          // 이모지 및 성과 표시
-          Column(
-            children: [
-              Text(
-                indicator.sparklineEmoji ?? '📊',
-                style: const TextStyle(fontSize: 24),
-              ),
-              Gaps.v4,
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: performanceColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  indicator.performance.emoji,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          Gaps.h12,
-          // 지표 정보
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        indicator.name,
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: rankBadgeColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        indicator.rankBadge,
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Gaps.v4,
-                Row(
-                  children: [
-                    Text(
-                      '${_formatValue(indicator.value)}${indicator.unit}',
-                      style: AppTypography.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: performanceColor,
-                      ),
-                    ),
-                    Gaps.h8,
-                    Text(
-                      '${indicator.rank}위/${indicator.totalCountries}개국',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+        child: Row(
+          children: [
+            // 이모지 및 성과 표시
+            Text(
+              indicator.sparklineEmoji ?? '📊',
+              style: const TextStyle(fontSize: 24),
             ),
-          ),
-        ],
-      ),
+            Gaps.h12,
+            // 지표 정보
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          indicator.name,
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: rankBadgeColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          indicator.rankBadge,
+                          style: AppTypography.caption.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Gaps.v4,
+                  Row(
+                    children: [
+                      Text(
+                        '${_formatValue(indicator.value)}${indicator.unit}',
+                        style: AppTypography.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: performanceColor,
+                        ),
+                      ),
+                      Gaps.h8,
+                      Text(
+                        '${indicator.rank}위/${indicator.totalCountries}개국',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -374,9 +421,7 @@ class _RealCountrySummaryCardState extends ConsumerState<RealCountrySummaryCard>
     return Center(
       child: Text(
         '마지막 업데이트: ${_formatDateTime(lastUpdated)}',
-        style: AppTypography.caption.copyWith(
-          color: AppColors.textSecondary,
-        ),
+        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
       ),
     );
   }

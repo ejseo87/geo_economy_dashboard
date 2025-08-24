@@ -51,6 +51,18 @@ dependencies:
   shared_preferences: ^2.5.3
   connectivity_plus: ^5.0.2
   logger: ^2.5.0
+  # 카드 공유/이미지 내보내기
+  share_plus: ^10.1.2
+  path_provider: ^2.1.5
+  flutter_widget_from_html: ^0.16.0
+  # 스크린샷 및 이미지 캡처  
+  widgets_to_image: ^2.0.1
+  permission_handler: ^11.3.1
+  # 갤러리에 이미지 저장 (iOS/Android)
+  gal: ^2.3.2
+  # 로컬 알림
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
