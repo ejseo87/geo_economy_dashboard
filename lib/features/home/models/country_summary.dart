@@ -17,6 +17,32 @@ class CountrySummary {
     required this.overallRanking,
     required this.lastUpdated,
   });
+
+  /// JSON으로 직렬화
+  Map<String, dynamic> toJson() {
+    return {
+      'countryCode': countryCode,
+      'countryName': countryName,
+      'flagEmoji': flagEmoji,
+      'topIndicators': topIndicators.map((indicator) => indicator.toJson()).toList(),
+      'overallRanking': overallRanking,
+      'lastUpdated': lastUpdated.toIso8601String(),
+    };
+  }
+
+  /// JSON에서 역직렬화
+  factory CountrySummary.fromJson(Map<String, dynamic> json) {
+    return CountrySummary(
+      countryCode: json['countryCode'] as String,
+      countryName: json['countryName'] as String,
+      flagEmoji: json['flagEmoji'] as String,
+      topIndicators: (json['topIndicators'] as List)
+          .map((indicator) => KeyIndicator.fromJson(indicator as Map<String, dynamic>))
+          .toList(),
+      overallRanking: json['overallRanking'] as String,
+      lastUpdated: DateTime.parse(json['lastUpdated'] as String),
+    );
+  }
 }
 
 /// 핵심 지표 정보
@@ -57,5 +83,40 @@ class KeyIndicator {
   /// 성과 레벨 이모지
   String get performanceEmoji {
     return performance.emoji;
+  }
+
+  /// JSON으로 직렬화
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'name': name,
+      'unit': unit,
+      'value': value,
+      'rank': rank,
+      'totalCountries': totalCountries,
+      'percentile': percentile,
+      'performance': performance.toString().split('.').last,
+      'direction': direction,
+      'sparklineEmoji': sparklineEmoji,
+    };
+  }
+
+  /// JSON에서 역직렬화
+  factory KeyIndicator.fromJson(Map<String, dynamic> json) {
+    return KeyIndicator(
+      code: json['code'] as String,
+      name: json['name'] as String,
+      unit: json['unit'] as String,
+      value: (json['value'] as num).toDouble(),
+      rank: json['rank'] as int,
+      totalCountries: json['totalCountries'] as int,
+      percentile: (json['percentile'] as num).toDouble(),
+      performance: PerformanceLevel.values.firstWhere(
+        (level) => level.toString().split('.').last == json['performance'],
+        orElse: () => PerformanceLevel.average,
+      ),
+      direction: json['direction'] as String,
+      sparklineEmoji: json['sparklineEmoji'] as String?,
+    );
   }
 }

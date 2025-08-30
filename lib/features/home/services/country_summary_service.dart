@@ -2,16 +2,21 @@ import 'package:geo_economy_dashboard/common/logger.dart';
 
 import '../models/country_summary.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../worldbank/repositories/indicator_repository.dart';
+import '../../worldbank/repositories/enhanced_indicator_repository.dart';
 import '../../countries/models/country.dart';
 import '../models/indicator_comparison.dart';
+import '../../../common/services/sqlite_cache_service.dart';
 
-/// 국가 요약 정보를 생성하는 서비스
+/// 국가 요약 정보를 생성하는 서비스 (Enhanced Repository 사용)
 class CountrySummaryService {
-  final IndicatorRepository _repository;
+  final EnhancedIndicatorRepository _repository;
+  final SQLiteCacheService _sqliteCache;
 
-  CountrySummaryService({IndicatorRepository? repository})
-    : _repository = repository ?? IndicatorRepository();
+  CountrySummaryService({
+    EnhancedIndicatorRepository? repository,
+    SQLiteCacheService? sqliteCache,
+  }) : _repository = repository ?? EnhancedIndicatorRepository(),
+       _sqliteCache = sqliteCache ?? SQLiteCacheService.instance;
 
   /// 핵심 20지표 정의 (PRD 기준)
   static const List<IndicatorCode> _allIndicators = [
@@ -56,11 +61,26 @@ class CountrySummaryService {
   /// 국가 요약 정보 생성
   Future<CountrySummary> generateCountrySummary({
     required String countryCode,
+    bool forceRefresh = false,
   }) async {
     try {
       AppLogger.debug(
         '[CountrySummaryService] Generating summary for $countryCode...',
       );
+
+      // SQLite 캐시 확인
+      if (!forceRefresh) {
+        final cachedSummary = await _sqliteCache.getCachedCountrySummary(
+          countryCode: countryCode,
+        );
+        
+        if (cachedSummary != null) {
+          AppLogger.debug(
+            '[CountrySummaryService] Using cached summary for $countryCode',
+          );
+          return CountrySummary.fromJson(cachedSummary);
+        }
+      }
 
       final country = OECDCountries.findByCode(countryCode);
       if (country == null) {
@@ -188,7 +208,7 @@ class CountrySummaryService {
         '[CountrySummaryService] Generated summary with ${indicators.length} indicators',
       );
 
-      return CountrySummary(
+      final summary = CountrySummary(
         countryCode: countryCode,
         countryName: country.nameKo,
         flagEmoji: country.flagEmoji,
@@ -196,6 +216,23 @@ class CountrySummaryService {
         overallRanking: overallRanking,
         lastUpdated: DateTime.now(),
       );
+
+      // SQLite에 캐시
+      try {
+        await _sqliteCache.cacheCountrySummary(
+          countryCode: countryCode,
+          summary: summary.toJson(),
+        );
+        AppLogger.debug(
+          '[CountrySummaryService] Cached summary for $countryCode',
+        );
+      } catch (e) {
+        AppLogger.error(
+          '[CountrySummaryService] Failed to cache summary for $countryCode: $e',
+        );
+      }
+
+      return summary;
     } catch (error) {
       AppLogger.error(
         '[CountrySummaryService] Error generating summary: $error',

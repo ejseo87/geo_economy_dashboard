@@ -181,7 +181,7 @@ $countryName의 핵심 20개 경제지표 중에서 다양한 카테고리(성�
         indicatorName: indicator.name,
         unit: indicator.unit,
         year: DateTime.now().year - 1,
-        korea: CountryData(
+        selectedCountry: CountryData(
           countryCode: 'KOR',
           countryName: '대한민국',
           value: koreaValue,

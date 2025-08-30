@@ -4,7 +4,6 @@ import 'package:geo_economy_dashboard/common/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
 import 'package:go_router/go_router.dart';
 

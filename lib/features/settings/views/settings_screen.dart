@@ -3,6 +3,7 @@ import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
 import 'package:geo_economy_dashboard/features/authentication/views/sign_up_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
+import 'package:geo_economy_dashboard/common/widgets/app_bar_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,30 +24,10 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bool isDark = ref.watch(settingsProvider).darkmode;
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0.5,
-        leadingWidth: 100,
-        leading: TextButton(
-          onPressed: () => _onBackPressed(context),
-          child: Row(
-            children: [
-              FaIcon(
-                FontAwesomeIcons.chevronLeft,
-                size: Sizes.size16,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              Gaps.h5,
-              Text(
-                "Back",
-                style: TextStyle(
-                  fontSize: Sizes.size16,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-        title: const Text("Settings"),
+      appBar: const AppBarWidget(
+        title: "Settings",
+        showGlobe: false,
+        showNotification: false,
       ),
       body: ListView(
         children: [

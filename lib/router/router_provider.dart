@@ -4,8 +4,11 @@ import 'package:geo_economy_dashboard/features/home/views/home_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import 'package:geo_economy_dashboard/features/users/views/user_profile_screen.dart';
 import 'package:geo_economy_dashboard/features/indicators/views/indicator_detail_screen.dart';
+import 'package:geo_economy_dashboard/features/countries/views/country_detail_screen.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 import 'package:geo_economy_dashboard/features/countries/models/country.dart';
+import 'package:geo_economy_dashboard/common/main_navigation/main_navigation_screen.dart';
+import 'package:geo_economy_dashboard/features/splash/views/splash_screen.dart';
 import 'package:geo_economy_dashboard/router/router_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -13,15 +16,25 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'router_provider.g.dart';
 
 @riverpod
-GoRouter router(Ref ref) {
+GoRouter router(RouterRef ref) {
   return GoRouter(
-    initialLocation: "/home",
+    initialLocation: "/splash",
     debugLogDiagnostics: true,
     //observers: [GoRouterObserver()],
     redirect: (context, state) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: SplashScreen.routeURL,
+        name: SplashScreen.routeName,
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: MainNavigationScreen.routeURL,
+        name: MainNavigationScreen.routeName,
+        builder: (context, state) => const MainNavigationScreen(),
+      ),
       GoRoute(
         path: SignUpScreen.routeURL,
         name: SignUpScreen.routeName,
@@ -78,6 +91,25 @@ GoRouter router(Ref ref) {
             indicatorCode: indicatorCode,
             country: country,
           );
+        },
+      ),
+      GoRoute(
+        path: CountryDetailScreen.routeURL,
+        name: CountryDetailScreen.routeName,
+        builder: (context, state) {
+          final countryCode = state.pathParameters['countryCode']!;
+          
+          // Country 객체 찾기
+          final country = OECDCountries.findByCode(countryCode) ?? 
+              Country(
+                code: countryCode,
+                name: countryCode,
+                nameKo: _getCountryName(countryCode),
+                flagEmoji: '',
+                region: 'OECD',
+              );
+          
+          return CountryDetailScreen(country: country);
         },
       ),
     ],

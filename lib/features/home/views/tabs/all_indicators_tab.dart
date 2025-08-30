@@ -18,86 +18,44 @@ class AllIndicatorsTab extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Consumer(
-              builder: (context, ref, child) {
-                final selectedCountry = ref.watch(selectedCountryProvider);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: FaIcon(
-                            FontAwesomeIcons.chartLine,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FaIcon(
+                        FontAwesomeIcons.database,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '전체 지표: 종합 분석',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '핵심 20개 지표',
-                                style: AppTypography.heading2,
-                              ),
-                              Text(
-                                '${selectedCountry.nameKo}의 전체 경제지표 현황',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FaIcon(
-                            FontAwesomeIcons.database,
-                            size: 12,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '전체 지표: 종합 분석',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        
+
         // 전체 지표 섹션
-        const SliverToBoxAdapter(
-          child: AllIndicatorsSection(),
-        ),
+        const SliverToBoxAdapter(child: AllIndicatorsSection()),
 
         // 데이터 출처 및 업데이트 정보
         SliverToBoxAdapter(
@@ -178,9 +136,7 @@ class AllIndicatorsTab extends ConsumerWidget {
         ),
 
         // 여백
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 32),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }

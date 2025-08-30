@@ -92,27 +92,35 @@ class _RealCountrySummaryCardState
       ],
     );
 
-    return Stack(
-      children: [
-        ShareCardWidget(
-          title: '${selectedCountry.nameKo} 경제지표 요약',
-          subtitle: 'OECD 38개국 중 현재 순위',
-          fileName:
-              '${selectedCountry.nameKo}_summary_${DateTime.now().toString().split(' ')[0]}.png',
-          child: _buildSummaryContent(summary),
-        ),
-        // 즐겨찾기 버튼
-        Positioned(
-          top: 16,
-          right: 16,
-          child: FavoriteButton(
-            favoriteItem: favoriteItem,
-            onFavoriteChanged: () {
-              // 즐겨찾기 상태 변경 시 스낵바 표시는 FavoriteButton에서 처리
-            },
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Stack(
+        children: [
+          _buildSummaryContent(summary),
+          // 즐겨찾기 버튼
+          Positioned(
+            top: 18,
+            right: 18,
+            child: FavoriteButton(
+              favoriteItem: favoriteItem,
+              onFavoriteChanged: () {
+                // 즐겨찾기 상태 변경 시 스낵바 표시는 FavoriteButton에서 처리
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -189,73 +197,18 @@ class _RealCountrySummaryCardState
   }
 
   Widget _buildSummaryContent(CountrySummary summary) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(summary),
-        Gaps.v16,
-        _buildOverallRanking(summary),
-        Gaps.v16,
-        _buildIndicatorsGrid(summary.topIndicators),
-        Gaps.v12,
-        _buildLastUpdated(summary.lastUpdated),
-      ],
-    );
-  }
-
-  Widget _buildHeader(CountrySummary summary) {
-    return Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Center(
-            child: Text(
-              summary.flagEmoji,
-              style: const TextStyle(fontSize: 24),
-            ),
-          ),
-        ),
-        Gaps.h12,
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                summary.countryName,
-                style: AppTypography.heading3.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                'OECD 38개국 중',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            '최신',
-            style: AppTypography.caption.copyWith(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildOverallRanking(summary),
+          Gaps.v16,
+          _buildIndicatorsGrid(summary.topIndicators),
+          Gaps.v12,
+          _buildLastUpdated(summary.lastUpdated),
+        ],
+      ),
     );
   }
 

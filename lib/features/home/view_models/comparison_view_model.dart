@@ -50,14 +50,14 @@ class ComparisonViewModel extends _$ComparisonViewModel {
 
 // Repository 프로바이더
 @riverpod
-IndicatorRepository indicatorRepository(Ref ref) {
+IndicatorRepository indicatorRepository(IndicatorRepositoryRef ref) {
   return IndicatorRepository();
 }
 
 // 개별 지표 비교를 위한 프로바이더
 @riverpod
 Future<IndicatorComparison> indicatorComparison(
-  Ref ref,
+  IndicatorComparisonRef ref,
   String indicatorCode,
 ) async {
   try {

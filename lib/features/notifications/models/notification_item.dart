@@ -234,8 +234,7 @@ class NotificationItemFactory {
     return NotificationItem(
       id: id,
       title: '📊 $indicatorName 데이터 업데이트',
-      body: '$countryName의 $indicatorName가 업데이트되었습니다.' +
-            (previousValue != null && newValue != null ? ' ($previousValue → $newValue)' : ''),
+      body: '$countryName의 $indicatorName가 업데이트되었습니다.${previousValue != null && newValue != null ? ' ($previousValue → $newValue)' : ''}',
       type: NotificationType.dataUpdate,
       priority: NotificationPriority.medium,
       scheduledAt: DateTime.now(),
@@ -298,7 +297,7 @@ class NotificationItemFactory {
     return NotificationItem(
       id: id,
       title: '$emoji $indicatorName 순위 변동',
-      body: '$countryName의 $indicatorName 순위가 ${previousRank}위에서 ${newRank}위로 $changeAmount계단 $changeText했습니다. (총 $totalCountries개국)',
+      body: '$countryName의 $indicatorName 순위가 $previousRank위에서 $newRank위로 $changeAmount계단 $changeText했습니다. (총 $totalCountries개국)',
       type: NotificationType.rankingChange,
       priority: isImprovement ? NotificationPriority.medium : NotificationPriority.high,
       scheduledAt: DateTime.now(),

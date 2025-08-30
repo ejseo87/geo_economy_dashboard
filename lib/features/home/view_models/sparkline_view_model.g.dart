@@ -6,114 +6,47 @@ part of 'sparkline_view_model.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-/// 스파크라인 뷰모델
-@ProviderFor(SparklineViewModel)
-const sparklineViewModelProvider = SparklineViewModelProvider._();
-
-/// 스파크라인 뷰모델
-final class SparklineViewModelProvider
-    extends $NotifierProvider<SparklineViewModel, SparklineState> {
-  /// 스파크라인 뷰모델
-  const SparklineViewModelProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'sparklineViewModelProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$sparklineViewModelHash();
-
-  @$internal
-  @override
-  SparklineViewModel create() => SparklineViewModel();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SparklineState value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<SparklineState>(value),
-    );
-  }
-}
-
 String _$sparklineViewModelHash() =>
-    r'5d4012d636e82ea0c66f02f51755b000980bbde1';
+    r'39209c2cd5817bd95318fb96b35613f4ba7e4fb9';
 
-abstract class _$SparklineViewModel extends $Notifier<SparklineState> {
-  SparklineState build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref = this.ref as $Ref<SparklineState, SparklineState>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<SparklineState, SparklineState>,
-              SparklineState,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
-  }
-}
+/// 스파크라인 뷰모델
+///
+/// Copied from [SparklineViewModel].
+@ProviderFor(SparklineViewModel)
+final sparklineViewModelProvider =
+    AutoDisposeNotifierProvider<SparklineViewModel, SparklineState>.internal(
+      SparklineViewModel.new,
+      name: r'sparklineViewModelProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$sparklineViewModelHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
-/// 국가별 스파크라인 프로바이더 (자동 갱신)
-@ProviderFor(CountrySparklineViewModel)
-const countrySparklineViewModelProvider = CountrySparklineViewModelProvider._();
-
-/// 국가별 스파크라인 프로바이더 (자동 갱신)
-final class CountrySparklineViewModelProvider
-    extends
-        $AsyncNotifierProvider<CountrySparklineViewModel, List<SparklineData>> {
-  /// 국가별 스파크라인 프로바이더 (자동 갱신)
-  const CountrySparklineViewModelProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'countrySparklineViewModelProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$countrySparklineViewModelHash();
-
-  @$internal
-  @override
-  CountrySparklineViewModel create() => CountrySparklineViewModel();
-}
-
+typedef _$SparklineViewModel = AutoDisposeNotifier<SparklineState>;
 String _$countrySparklineViewModelHash() =>
-    r'77509210f2e7bbab0bd31eb5f351f9fc68f7d539';
+    r'354fb62e8a3877ef58fa19e849f1a219b0c99d77';
 
-abstract class _$CountrySparklineViewModel
-    extends $AsyncNotifier<List<SparklineData>> {
-  FutureOr<List<SparklineData>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref =
-        this.ref as $Ref<AsyncValue<List<SparklineData>>, List<SparklineData>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<SparklineData>>, List<SparklineData>>,
-              AsyncValue<List<SparklineData>>,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
-  }
-}
+/// 국가별 스파크라인 프로바이더 (자동 갱신)
+///
+/// Copied from [CountrySparklineViewModel].
+@ProviderFor(CountrySparklineViewModel)
+final countrySparklineViewModelProvider =
+    AutoDisposeAsyncNotifierProvider<
+      CountrySparklineViewModel,
+      List<SparklineData>
+    >.internal(
+      CountrySparklineViewModel.new,
+      name: r'countrySparklineViewModelProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$countrySparklineViewModelHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
+typedef _$CountrySparklineViewModel =
+    AutoDisposeAsyncNotifier<List<SparklineData>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

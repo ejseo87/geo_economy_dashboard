@@ -58,26 +58,26 @@ class SelectedCountry extends _$SelectedCountry {
 
 /// 선택된 국가 정보를 제공하는 편의 Provider들
 @riverpod
-String selectedCountryCode(Ref ref) {
+String selectedCountryCode(SelectedCountryCodeRef ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.code;
 }
 
 @riverpod
-String selectedCountryName(Ref ref) {
+String selectedCountryName(SelectedCountryNameRef ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.nameKo;
 }
 
 @riverpod
-String selectedCountryFlag(Ref ref) {
+String selectedCountryFlag(SelectedCountryFlagRef ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.flagEmoji;
 }
 
 /// 국가가 한국인지 확인하는 Provider
 @riverpod
-bool isKoreaSelected(Ref ref) {
+bool isKoreaSelected(IsKoreaSelectedRef ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.code == 'KOR';
 }

@@ -303,7 +303,7 @@ class _RecommendedComparisonCardState extends ConsumerState<RecommendedCompariso
                 ),
               ),
               Text(
-                '${indicator.korea.value}${indicator.unit} (${indicator.korea.rank}위/${indicator.oecdStats.totalCountries}개국)',
+                '${indicator.selectedCountry.value}${indicator.unit} (${indicator.selectedCountry.rank}위/${indicator.oecdStats.totalCountries}개국)',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),

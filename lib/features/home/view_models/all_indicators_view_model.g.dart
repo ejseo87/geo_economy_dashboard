@@ -6,252 +6,330 @@ part of 'all_indicators_view_model.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-@ProviderFor(AllIndicatorsViewModel)
-const allIndicatorsViewModelProvider = AllIndicatorsViewModelProvider._();
+String _$categoryPerformanceHash() =>
+    r'7c4b468f928a686fcfccf82381fadbdb5dad2923';
 
-final class AllIndicatorsViewModelProvider
-    extends
-        $NotifierProvider<
-          AllIndicatorsViewModel,
-          AsyncValue<Map<String, List<IndicatorComparison>>>
-        > {
-  const AllIndicatorsViewModelProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'allIndicatorsViewModelProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+/// Copied from Dart SDK
+class _SystemHash {
+  _SystemHash._();
+
+  static int combine(int hash, int value) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + value);
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+    return hash ^ (hash >> 6);
+  }
+
+  static int finish(int hash) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    // ignore: parameter_assignments
+    hash = hash ^ (hash >> 11);
+    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+  }
+}
+
+/// 특정 카테고리 성과 요약 프로바이더
+///
+/// Copied from [categoryPerformance].
+@ProviderFor(categoryPerformance)
+const categoryPerformanceProvider = CategoryPerformanceFamily();
+
+/// 특정 카테고리 성과 요약 프로바이더
+///
+/// Copied from [categoryPerformance].
+class CategoryPerformanceFamily
+    extends Family<AsyncValue<CategoryPerformanceSummary>> {
+  /// 특정 카테고리 성과 요약 프로바이더
+  ///
+  /// Copied from [categoryPerformance].
+  const CategoryPerformanceFamily();
+
+  /// 특정 카테고리 성과 요약 프로바이더
+  ///
+  /// Copied from [categoryPerformance].
+  CategoryPerformanceProvider call(String category) {
+    return CategoryPerformanceProvider(category);
+  }
+
+  @override
+  CategoryPerformanceProvider getProviderOverride(
+    covariant CategoryPerformanceProvider provider,
+  ) {
+    return call(provider.category);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'categoryPerformanceProvider';
+}
+
+/// 특정 카테고리 성과 요약 프로바이더
+///
+/// Copied from [categoryPerformance].
+class CategoryPerformanceProvider
+    extends AutoDisposeFutureProvider<CategoryPerformanceSummary> {
+  /// 특정 카테고리 성과 요약 프로바이더
+  ///
+  /// Copied from [categoryPerformance].
+  CategoryPerformanceProvider(String category)
+    : this._internal(
+        (ref) => categoryPerformance(ref as CategoryPerformanceRef, category),
+        from: categoryPerformanceProvider,
+        name: r'categoryPerformanceProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$categoryPerformanceHash,
+        dependencies: CategoryPerformanceFamily._dependencies,
+        allTransitiveDependencies:
+            CategoryPerformanceFamily._allTransitiveDependencies,
+        category: category,
       );
 
-  @override
-  String debugGetCreateSourceHash() => _$allIndicatorsViewModelHash();
+  CategoryPerformanceProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.category,
+  }) : super.internal();
 
-  @$internal
-  @override
-  AllIndicatorsViewModel create() => AllIndicatorsViewModel();
+  final String category;
 
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(
-    AsyncValue<Map<String, List<IndicatorComparison>>> value,
+  @override
+  Override overrideWith(
+    FutureOr<CategoryPerformanceSummary> Function(
+      CategoryPerformanceRef provider,
+    )
+    create,
   ) {
-    return $ProviderOverride(
+    return ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<
-            AsyncValue<Map<String, List<IndicatorComparison>>>
-          >(value),
+      override: CategoryPerformanceProvider._internal(
+        (ref) => create(ref as CategoryPerformanceRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        category: category,
+      ),
     );
   }
-}
-
-String _$allIndicatorsViewModelHash() =>
-    r'26b9d8355727f6ce19f8fb1e476537aae098b53a';
-
-abstract class _$AllIndicatorsViewModel
-    extends $Notifier<AsyncValue<Map<String, List<IndicatorComparison>>>> {
-  AsyncValue<Map<String, List<IndicatorComparison>>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref =
-        this.ref
-            as $Ref<
-              AsyncValue<Map<String, List<IndicatorComparison>>>,
-              AsyncValue<Map<String, List<IndicatorComparison>>>
-            >;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<
-                AsyncValue<Map<String, List<IndicatorComparison>>>,
-                AsyncValue<Map<String, List<IndicatorComparison>>>
-              >,
-              AsyncValue<Map<String, List<IndicatorComparison>>>,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
-  }
-}
-
-/// 특정 카테고리 성과 요약 프로바이더
-@ProviderFor(categoryPerformance)
-const categoryPerformanceProvider = CategoryPerformanceFamily._();
-
-/// 특정 카테고리 성과 요약 프로바이더
-final class CategoryPerformanceProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<CategoryPerformanceSummary>,
-          CategoryPerformanceSummary,
-          FutureOr<CategoryPerformanceSummary>
-        >
-    with
-        $FutureModifier<CategoryPerformanceSummary>,
-        $FutureProvider<CategoryPerformanceSummary> {
-  /// 특정 카테고리 성과 요약 프로바이더
-  const CategoryPerformanceProvider._({
-    required CategoryPerformanceFamily super.from,
-    required String super.argument,
-  }) : super(
-         retry: null,
-         name: r'categoryPerformanceProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
 
   @override
-  String debugGetCreateSourceHash() => _$categoryPerformanceHash();
-
-  @override
-  String toString() {
-    return r'categoryPerformanceProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<CategoryPerformanceSummary> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<CategoryPerformanceSummary> create(Ref ref) {
-    final argument = this.argument as String;
-    return categoryPerformance(ref, argument);
+  AutoDisposeFutureProviderElement<CategoryPerformanceSummary> createElement() {
+    return _CategoryPerformanceProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is CategoryPerformanceProvider && other.argument == argument;
+    return other is CategoryPerformanceProvider && other.category == category;
   }
 
   @override
   int get hashCode {
-    return argument.hashCode;
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, category.hashCode);
+
+    return _SystemHash.finish(hash);
   }
 }
 
-String _$categoryPerformanceHash() =>
-    r'ee205933dbf2b5bdcafbe121d420f1823404c63d';
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin CategoryPerformanceRef
+    on AutoDisposeFutureProviderRef<CategoryPerformanceSummary> {
+  /// The parameter `category` of this provider.
+  String get category;
+}
 
-/// 특정 카테고리 성과 요약 프로바이더
-final class CategoryPerformanceFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<CategoryPerformanceSummary>,
-          String
-        > {
-  const CategoryPerformanceFamily._()
-    : super(
-        retry: null,
-        name: r'categoryPerformanceProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
+class _CategoryPerformanceProviderElement
+    extends AutoDisposeFutureProviderElement<CategoryPerformanceSummary>
+    with CategoryPerformanceRef {
+  _CategoryPerformanceProviderElement(super.provider);
+
+  @override
+  String get category => (origin as CategoryPerformanceProvider).category;
+}
+
+String _$singleIndicatorComparisonHash() =>
+    r'fe87b9e4722a37afb16e44dbe9dbcb550cd1d486';
+
+/// 단일 지표 비교 프로바이더 (개선된 버전)
+///
+/// Copied from [singleIndicatorComparison].
+@ProviderFor(singleIndicatorComparison)
+const singleIndicatorComparisonProvider = SingleIndicatorComparisonFamily();
+
+/// 단일 지표 비교 프로바이더 (개선된 버전)
+///
+/// Copied from [singleIndicatorComparison].
+class SingleIndicatorComparisonFamily
+    extends Family<AsyncValue<IndicatorComparison>> {
+  /// 단일 지표 비교 프로바이더 (개선된 버전)
+  ///
+  /// Copied from [singleIndicatorComparison].
+  const SingleIndicatorComparisonFamily();
+
+  /// 단일 지표 비교 프로바이더 (개선된 버전)
+  ///
+  /// Copied from [singleIndicatorComparison].
+  SingleIndicatorComparisonProvider call(IndicatorCode indicatorCode) {
+    return SingleIndicatorComparisonProvider(indicatorCode);
+  }
+
+  @override
+  SingleIndicatorComparisonProvider getProviderOverride(
+    covariant SingleIndicatorComparisonProvider provider,
+  ) {
+    return call(provider.indicatorCode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'singleIndicatorComparisonProvider';
+}
+
+/// 단일 지표 비교 프로바이더 (개선된 버전)
+///
+/// Copied from [singleIndicatorComparison].
+class SingleIndicatorComparisonProvider
+    extends AutoDisposeFutureProvider<IndicatorComparison> {
+  /// 단일 지표 비교 프로바이더 (개선된 버전)
+  ///
+  /// Copied from [singleIndicatorComparison].
+  SingleIndicatorComparisonProvider(IndicatorCode indicatorCode)
+    : this._internal(
+        (ref) => singleIndicatorComparison(
+          ref as SingleIndicatorComparisonRef,
+          indicatorCode,
+        ),
+        from: singleIndicatorComparisonProvider,
+        name: r'singleIndicatorComparisonProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$singleIndicatorComparisonHash,
+        dependencies: SingleIndicatorComparisonFamily._dependencies,
+        allTransitiveDependencies:
+            SingleIndicatorComparisonFamily._allTransitiveDependencies,
+        indicatorCode: indicatorCode,
       );
 
-  /// 특정 카테고리 성과 요약 프로바이더
-  CategoryPerformanceProvider call(String category) =>
-      CategoryPerformanceProvider._(argument: category, from: this);
+  SingleIndicatorComparisonProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.indicatorCode,
+  }) : super.internal();
+
+  final IndicatorCode indicatorCode;
 
   @override
-  String toString() => r'categoryPerformanceProvider';
-}
-
-/// 단일 지표 비교 프로바이더 (개선된 버전)
-@ProviderFor(singleIndicatorComparison)
-const singleIndicatorComparisonProvider = SingleIndicatorComparisonFamily._();
-
-/// 단일 지표 비교 프로바이더 (개선된 버전)
-final class SingleIndicatorComparisonProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<IndicatorComparison>,
-          IndicatorComparison,
-          FutureOr<IndicatorComparison>
-        >
-    with
-        $FutureModifier<IndicatorComparison>,
-        $FutureProvider<IndicatorComparison> {
-  /// 단일 지표 비교 프로바이더 (개선된 버전)
-  const SingleIndicatorComparisonProvider._({
-    required SingleIndicatorComparisonFamily super.from,
-    required IndicatorCode super.argument,
-  }) : super(
-         retry: null,
-         name: r'singleIndicatorComparisonProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$singleIndicatorComparisonHash();
-
-  @override
-  String toString() {
-    return r'singleIndicatorComparisonProvider'
-        ''
-        '($argument)';
+  Override overrideWith(
+    FutureOr<IndicatorComparison> Function(
+      SingleIndicatorComparisonRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SingleIndicatorComparisonProvider._internal(
+        (ref) => create(ref as SingleIndicatorComparisonRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        indicatorCode: indicatorCode,
+      ),
+    );
   }
 
-  @$internal
   @override
-  $FutureProviderElement<IndicatorComparison> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<IndicatorComparison> create(Ref ref) {
-    final argument = this.argument as IndicatorCode;
-    return singleIndicatorComparison(ref, argument);
+  AutoDisposeFutureProviderElement<IndicatorComparison> createElement() {
+    return _SingleIndicatorComparisonProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
     return other is SingleIndicatorComparisonProvider &&
-        other.argument == argument;
+        other.indicatorCode == indicatorCode;
   }
 
   @override
   int get hashCode {
-    return argument.hashCode;
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, indicatorCode.hashCode);
+
+    return _SystemHash.finish(hash);
   }
 }
 
-String _$singleIndicatorComparisonHash() =>
-    r'fe64b30c55583c8764d12cd8787f1b4ff0769f43';
-
-/// 단일 지표 비교 프로바이더 (개선된 버전)
-final class SingleIndicatorComparisonFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<IndicatorComparison>,
-          IndicatorCode
-        > {
-  const SingleIndicatorComparisonFamily._()
-    : super(
-        retry: null,
-        name: r'singleIndicatorComparisonProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// 단일 지표 비교 프로바이더 (개선된 버전)
-  SingleIndicatorComparisonProvider call(IndicatorCode indicatorCode) =>
-      SingleIndicatorComparisonProvider._(argument: indicatorCode, from: this);
-
-  @override
-  String toString() => r'singleIndicatorComparisonProvider';
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin SingleIndicatorComparisonRef
+    on AutoDisposeFutureProviderRef<IndicatorComparison> {
+  /// The parameter `indicatorCode` of this provider.
+  IndicatorCode get indicatorCode;
 }
 
+class _SingleIndicatorComparisonProviderElement
+    extends AutoDisposeFutureProviderElement<IndicatorComparison>
+    with SingleIndicatorComparisonRef {
+  _SingleIndicatorComparisonProviderElement(super.provider);
+
+  @override
+  IndicatorCode get indicatorCode =>
+      (origin as SingleIndicatorComparisonProvider).indicatorCode;
+}
+
+String _$allIndicatorsViewModelHash() =>
+    r'26b9d8355727f6ce19f8fb1e476537aae098b53a';
+
+/// See also [AllIndicatorsViewModel].
+@ProviderFor(AllIndicatorsViewModel)
+final allIndicatorsViewModelProvider =
+    AutoDisposeNotifierProvider<
+      AllIndicatorsViewModel,
+      AsyncValue<Map<String, List<IndicatorComparison>>>
+    >.internal(
+      AllIndicatorsViewModel.new,
+      name: r'allIndicatorsViewModelProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$allIndicatorsViewModelHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$AllIndicatorsViewModel =
+    AutoDisposeNotifier<AsyncValue<Map<String, List<IndicatorComparison>>>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

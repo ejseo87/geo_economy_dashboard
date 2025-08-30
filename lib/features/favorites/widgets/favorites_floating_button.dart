@@ -21,10 +21,12 @@ class FavoritesFloatingButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FavoritesFloatingButton> createState() => _FavoritesFloatingButtonState();
+  ConsumerState<FavoritesFloatingButton> createState() =>
+      _FavoritesFloatingButtonState();
 }
 
-class _FavoritesFloatingButtonState extends ConsumerState<FavoritesFloatingButton>
+class _FavoritesFloatingButtonState
+    extends ConsumerState<FavoritesFloatingButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -103,10 +105,12 @@ class _FavoritesFloatingButtonState extends ConsumerState<FavoritesFloatingButto
 
       final favoritesService = FavoritesService.instance;
       bool success = false;
-      
+
       if (_isFavorite) {
         // 즐겨찾기 제거
-        success = await favoritesService.removeFavorite(widget.favoriteItem!.id);
+        success = await favoritesService.removeFavorite(
+          widget.favoriteItem!.id,
+        );
         if (success) {
           widget.onFavoriteRemoved?.call();
           _showSnackBar('즐겨찾기에서 제거되었습니다', Colors.orange);
@@ -134,7 +138,7 @@ class _FavoritesFloatingButtonState extends ConsumerState<FavoritesFloatingButto
 
   void _showSnackBar(String message, Color backgroundColor) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -151,9 +155,7 @@ class _FavoritesFloatingButtonState extends ConsumerState<FavoritesFloatingButto
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -179,13 +181,13 @@ class FavoriteHeartIcon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFavorite = FavoritesService.instance.isFavorite(favoriteId);
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Icon(
         isFavorite ? Icons.favorite : Icons.favorite_border,
         size: size,
-        color: isFavorite 
+        color: isFavorite
             ? (activeColor ?? AppColors.primary)
             : (inactiveColor ?? AppColors.textSecondary),
       ),
@@ -211,7 +213,8 @@ class FavoriteButton extends ConsumerStatefulWidget {
 class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
   bool _isLoading = false;
 
-  bool get _isFavorite => FavoritesService.instance.isFavorite(widget.favoriteItem.id);
+  bool get _isFavorite =>
+      FavoritesService.instance.isFavorite(widget.favoriteItem.id);
 
   @override
   Widget build(BuildContext context) {
@@ -219,9 +222,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
       onTap: _isLoading ? null : _toggleFavorite,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
-          color: _isFavorite 
+          color: _isFavorite
               ? AppColors.primary.withValues(alpha: 0.1)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
@@ -236,22 +239,24 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ] else ...[
               Icon(
                 _isFavorite ? Icons.favorite : Icons.favorite_border,
                 size: 16,
-                color: _isFavorite ? AppColors.primary : AppColors.textSecondary,
+                color: _isFavorite
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
               ),
             ],
             const SizedBox(width: 4),
             Text(
               _isFavorite ? '즐겨찾기됨' : '즐겨찾기',
               style: AppTypography.bodySmall.copyWith(
-                color: _isFavorite ? AppColors.primary : AppColors.textSecondary,
+                color: _isFavorite
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
                 fontWeight: _isFavorite ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -271,13 +276,13 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
     try {
       final favoritesService = FavoritesService.instance;
       bool success = false;
-      
+
       if (_isFavorite) {
         success = await favoritesService.removeFavorite(widget.favoriteItem.id);
       } else {
         success = await favoritesService.addFavorite(widget.favoriteItem);
       }
-      
+
       if (success) {
         widget.onFavoriteChanged?.call();
       }
@@ -307,7 +312,7 @@ class FavoriteBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFavorite = FavoritesService.instance.isFavorite(favoriteId);
-    
+
     if (!isFavorite) return child;
 
     return Stack(
@@ -329,11 +334,7 @@ class FavoriteBadge extends ConsumerWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.favorite,
-              size: 16,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.favorite, size: 16, color: Colors.white),
           ),
         ),
       ],
@@ -366,16 +367,11 @@ class FavoriteListItem extends ConsumerWidget {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            _getTypeIcon(favorite.type),
-            color: AppColors.primary,
-          ),
+          child: Icon(_getTypeIcon(favorite.type), color: AppColors.primary),
         ),
         title: Text(
           favorite.title,
-          style: AppTypography.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +391,10 @@ class FavoriteListItem extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
@@ -458,7 +457,7 @@ class FavoriteListItem extends ConsumerWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}일 전';
     } else if (difference.inHours > 0) {

@@ -4,20 +4,21 @@ import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart
 import 'package:geo_economy_dashboard/common/services/network_service.dart';
 import '../models/indicator_metadata.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../worldbank/repositories/indicator_repository.dart';
+import '../../worldbank/repositories/enhanced_indicator_repository.dart';
 import '../../countries/models/country.dart';
+import '../../home/models/indicator_comparison.dart';
 
 /// 지표 상세 정보 서비스 (오프라인 캐시 지원)
 class IndicatorDetailService {
-  final IndicatorRepository _repository;
+  final EnhancedIndicatorRepository _repository;
   final OfflineCacheService _cacheService;
   final NetworkService _networkService;
 
   IndicatorDetailService({
-    IndicatorRepository? repository,
+    EnhancedIndicatorRepository? repository,
     OfflineCacheService? cacheService,
     NetworkService? networkService,
-  }) : _repository = repository ?? IndicatorRepository(),
+  }) : _repository = repository ?? EnhancedIndicatorRepository(),
        _cacheService = cacheService ?? OfflineCacheService.instance,
        _networkService = networkService ?? NetworkService.instance;
 
@@ -228,56 +229,69 @@ class IndicatorDetailService {
     return dataPoints..sort((a, b) => a.year.compareTo(b.year));
   }
 
-  /// 현재 순위 계산
+  /// 현재 순위 계산 (개선된 버전)
   Future<(int?, int)> _getCurrentRanking(IndicatorCode indicatorCode, String countryCode) async {
     try {
-      // OECD 38개국 데이터 수집
-      const oecdCountries = [
-        'AUS', 'AUT', 'BEL', 'CAN', 'CHL', 'COL', 'CRI', 'CZE', 'DNK', 'EST',
-        'FIN', 'FRA', 'DEU', 'GRC', 'HUN', 'ISL', 'IRL', 'ISR', 'ITA', 'JPN',
-        'KOR', 'LVA', 'LTU', 'LUX', 'MEX', 'NLD', 'NZL', 'NOR', 'POL', 'PRT',
-        'SVK', 'SVN', 'ESP', 'SWE', 'CHE', 'TUR', 'GBR', 'USA'
-      ];
-
-      final countryValues = <String, double>{};
+      AppLogger.debug('[IndicatorDetailService] Calculating ranking for $countryCode - ${indicatorCode.name}');
       
-      for (final country in oecdCountries) {
-        final indicatorData = await _repository.getIndicatorData(
-          countryCode: country,
-          indicatorCode: indicatorCode,
-        );
-        
-        if (indicatorData != null) {
-          final currentYear = DateTime.now().year;
-          for (int year = currentYear; year >= currentYear - 3; year--) {
-            final value = indicatorData.getValueForYear(year);
-            if (value != null && value.isFinite) {
-              countryValues[country] = value;
-              break;
-            }
+      // 캐시된 OECD 통계를 사용하여 순위 계산
+      final currentYear = DateTime.now().year;
+      final candidateYears = [currentYear - 1, currentYear - 2, currentYear - 3];
+      
+      OECDStatistics? oecdStats;
+      int? usedYear;
+      
+      // 데이터가 있는 가장 최근 연도 찾기
+      for (final year in candidateYears) {
+        try {
+          oecdStats = await _repository.getOECDStatistics(
+            indicatorCode: indicatorCode,
+            year: year,
+          );
+          if (oecdStats.totalCountries > 0) {
+            usedYear = year;
+            AppLogger.debug('[IndicatorDetailService] Using OECD stats from year $year');
+            break;
+          }
+        } catch (e) {
+          AppLogger.debug('[IndicatorDetailService] No OECD stats for year $year: $e');
+          continue;
+        }
+      }
+
+      if (oecdStats == null || usedYear == null) {
+        AppLogger.warning('[IndicatorDetailService] No OECD statistics available');
+        return (null, 0);
+      }
+
+      // 해당 국가의 값 조회
+      final countryData = await _repository.getIndicatorData(
+        countryCode: countryCode,
+        indicatorCode: indicatorCode,
+      );
+
+      final countryValue = countryData?.getValueForYear(usedYear);
+      if (countryValue == null || !countryValue.isFinite) {
+        AppLogger.warning('[IndicatorDetailService] No valid data for $countryCode in $usedYear');
+        return (null, oecdStats.totalCountries);
+      }
+
+      // countryRankings가 있으면 그것을 사용, 없으면 계산
+      if (oecdStats.countryRankings != null && oecdStats.countryRankings!.isNotEmpty) {
+        // 캐시된 랭킹에서 해당 국가 찾기
+        for (final ranking in oecdStats.countryRankings!) {
+          if (ranking.countryCode == countryCode) {
+            AppLogger.info('[IndicatorDetailService] Found cached ranking for $countryCode: ${ranking.rank}/${oecdStats.totalCountries}');
+            return (ranking.rank, oecdStats.totalCountries);
           }
         }
       }
 
-      if (countryValues.isEmpty) return (null, 0);
-
-      // 순위 계산 (높을수록 좋은 지표인지에 따라 정렬)
-      final isHigherBetter = _isHigherBetter(indicatorCode);
-      final sortedEntries = countryValues.entries.toList()
-        ..sort((a, b) => isHigherBetter 
-            ? b.value.compareTo(a.value)
-            : a.value.compareTo(b.value));
-
-      // 해당 국가 순위 찾기
-      int? rank;
-      for (int i = 0; i < sortedEntries.length; i++) {
-        if (sortedEntries[i].key == countryCode) {
-          rank = i + 1;
-          break;
-        }
-      }
-
-      return (rank, sortedEntries.length);
+      // 캐시된 랭킹이 없으면 통계를 사용해 추정
+      final rank = _calculateRankFromStats(countryValue, oecdStats, indicatorCode);
+      AppLogger.info('[IndicatorDetailService] Calculated ranking for $countryCode: $rank/${oecdStats.totalCountries}');
+      
+      return (rank, oecdStats.totalCountries);
       
     } catch (error) {
       AppLogger.error('[IndicatorDetailService] Error calculating ranking: $error');
@@ -285,41 +299,79 @@ class IndicatorDetailService {
     }
   }
 
-  /// OECD 통계 계산
-  Future<OECDStats> _calculateOECDStats(IndicatorCode indicatorCode) async {
-    const oecdCountries = [
-      'AUS', 'AUT', 'BEL', 'CAN', 'CHL', 'COL', 'CRI', 'CZE', 'DNK', 'EST',
-      'FIN', 'FRA', 'DEU', 'GRC', 'HUN', 'ISL', 'IRL', 'ISR', 'ITA', 'JPN',
-      'KOR', 'LVA', 'LTU', 'LUX', 'MEX', 'NLD', 'NZL', 'NOR', 'POL', 'PRT',
-      'SVK', 'SVN', 'ESP', 'SWE', 'CHE', 'TUR', 'GBR', 'USA'
-    ];
-
-    final rankings = <CountryRanking>[];
+  /// 통계 정보를 사용하여 순위 추정
+  int _calculateRankFromStats(double countryValue, OECDStatistics stats, IndicatorCode indicatorCode) {
+    final isHigherBetter = _isHigherBetter(indicatorCode);
+    final totalCountries = stats.totalCountries;
     
-    for (final countryCode in oecdCountries) {
-      final indicatorData = await _repository.getIndicatorData(
-        countryCode: countryCode,
-        indicatorCode: indicatorCode,
-      );
+    // 백분위수 기반 순위 추정
+    if (isHigherBetter) {
+      // 높을수록 좋은 지표
+      if (countryValue >= stats.max) return 1;
+      if (countryValue >= stats.q3) return (totalCountries * 0.25).round();
+      if (countryValue >= stats.median) return (totalCountries * 0.5).round();
+      if (countryValue >= stats.q1) return (totalCountries * 0.75).round();
+      return totalCountries;
+    } else {
+      // 낮을수록 좋은 지표
+      if (countryValue <= stats.min) return 1;
+      if (countryValue <= stats.q1) return (totalCountries * 0.25).round();
+      if (countryValue <= stats.median) return (totalCountries * 0.5).round();
+      if (countryValue <= stats.q3) return (totalCountries * 0.75).round();
+      return totalCountries;
+    }
+  }
+
+  /// OECD 통계 계산 (개선된 버전)
+  Future<OECDStats> _calculateOECDStats(IndicatorCode indicatorCode) async {
+    try {
+      final currentYear = DateTime.now().year;
+      final candidateYears = [currentYear - 1, currentYear - 2, currentYear - 3];
       
-      if (indicatorData != null) {
-        final currentYear = DateTime.now().year;
-        for (int year = currentYear; year >= currentYear - 3; year--) {
-          final value = indicatorData.getValueForYear(year);
-          if (value != null && value.isFinite) {
-            rankings.add(CountryRanking(
-              countryCode: countryCode,
-              countryName: _getCountryName(countryCode),
-              value: value,
-              rank: 0, // 나중에 계산
-            ));
-            break;
+      // Enhanced Repository를 사용하여 OECD 통계 가져오기
+      for (final year in candidateYears) {
+        try {
+          final oecdStats = await _repository.getOECDStatistics(
+            indicatorCode: indicatorCode,
+            year: year,
+          );
+          
+          if (oecdStats.totalCountries > 0) {
+            // OECDStatistics를 OECDStats로 변환
+            return OECDStats(
+              median: oecdStats.median,
+              mean: oecdStats.mean,
+              standardDeviation: math.sqrt(((oecdStats.max - oecdStats.min) / 4)), // 근사치
+              q1: oecdStats.q1,
+              q3: oecdStats.q3,
+              min: oecdStats.min,
+              max: oecdStats.max,
+              totalCountries: oecdStats.totalCountries,
+              rankings: _convertToCountryRankings(oecdStats.countryRankings),
+            );
           }
+        } catch (e) {
+          AppLogger.debug('[IndicatorDetailService] Failed to get OECD stats for year $year: $e');
+          continue;
         }
       }
-    }
-
-    if (rankings.isEmpty) {
+      
+      // 모든 연도에서 데이터를 찾지 못한 경우 기본값 반환
+      AppLogger.warning('[IndicatorDetailService] No OECD statistics available for any year');
+      return const OECDStats(
+        median: 0,
+        mean: 0,
+        standardDeviation: 0,
+        q1: 0,
+        q3: 0,
+        min: 0,
+        max: 0,
+        totalCountries: 0,
+        rankings: [],
+      );
+      
+    } catch (error) {
+      AppLogger.error('[IndicatorDetailService] Error calculating OECD stats: $error');
       return const OECDStats(
         median: 0,
         mean: 0,
@@ -332,41 +384,18 @@ class IndicatorDetailService {
         rankings: [],
       );
     }
+  }
 
-    // 값 기준으로 정렬 및 순위 할당
-    final isHigherBetter = _isHigherBetter(indicatorCode);
-    rankings.sort((a, b) => isHigherBetter 
-        ? b.value.compareTo(a.value)
-        : a.value.compareTo(b.value));
+  /// CountryRankingData 리스트를 CountryRanking 리스트로 변환
+  List<CountryRanking> _convertToCountryRankings(List<CountryRankingData>? rankings) {
+    if (rankings == null || rankings.isEmpty) return [];
     
-    for (int i = 0; i < rankings.length; i++) {
-      rankings[i] = rankings[i].copyWith(rank: i + 1);
-    }
-
-    // 통계 계산
-    final values = rankings.map((r) => r.value).toList()..sort();
-    final mean = values.reduce((a, b) => a + b) / values.length;
-    final variance = values.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) / values.length;
-    final standardDeviation = math.sqrt(variance);
-    
-    final median = values.length % 2 == 0
-        ? (values[values.length ~/ 2 - 1] + values[values.length ~/ 2]) / 2
-        : values[values.length ~/ 2];
-    
-    final q1Index = (values.length * 0.25).floor();
-    final q3Index = (values.length * 0.75).floor();
-    
-    return OECDStats(
-      median: median,
-      mean: mean,
-      standardDeviation: standardDeviation,
-      q1: values[q1Index],
-      q3: values[q3Index],
-      min: values.first,
-      max: values.last,
-      totalCountries: values.length,
-      rankings: rankings,
-    );
+    return rankings.map((ranking) => CountryRanking(
+      countryCode: ranking.countryCode,
+      countryName: ranking.countryName,
+      value: ranking.value,
+      rank: ranking.rank,
+    )).toList();
   }
 
   /// 트렌드 분석

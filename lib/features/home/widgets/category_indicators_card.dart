@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
+import '../../../constants/indicators_catalog.dart';
 import '../models/indicator_comparison.dart';
 import '../view_models/all_indicators_view_model.dart';
 import '../view_models/sparkline_view_model.dart';
@@ -49,7 +50,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _getCategoryColor().withValues(alpha: 0.1),
-          borderRadius: isExpanded 
+          borderRadius: isExpanded
               ? const BorderRadius.vertical(top: Radius.circular(12))
               : BorderRadius.circular(12),
         ),
@@ -61,10 +62,9 @@ class CategoryIndicatorsCard extends ConsumerWidget {
                 color: _getCategoryColor().withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: FaIcon(
-                _getCategoryIcon(),
-                size: 16,
-                color: _getCategoryColor(),
+              child: Text(
+                IndicatorCatalogUtils.getCategoryEmoji(category),
+                style: TextStyle(fontSize: 16),
               ),
             ),
             const SizedBox(width: 8),
@@ -80,7 +80,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    _getCategoryDescription(),
+                    '${IndicatorCatalogUtils.indicatorCountByCategory[category] ?? 0}개 지표 • ${_getCategoryDescription()}',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -116,7 +116,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
       ),
       data: (categoryData) {
         final indicators = categoryData[category] ?? [];
-        
+
         if (indicators.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
@@ -144,80 +144,74 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     final performanceColor = PerformanceColors.getPerformanceColor(
       indicator.insight.performance,
     );
-    
+
     return Builder(
       builder: (context) => Consumer(
         builder: (context, ref, child) => ListTile(
           onTap: () => _navigateToIndicatorDetail(context, ref, indicator),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: performanceColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Text(
-            '1',
-            style: AppTypography.bodySmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: performanceColor,
-            ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-        ),
-      ),
-      title: Text(
-        indicator.indicatorName,
-        style: AppTypography.bodyMedium,
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${indicator.korea.value.toStringAsFixed(2)} ${indicator.unit}',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          _buildCompactSparkline(indicator),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
+          leading: Container(
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: performanceColor,
-              borderRadius: BorderRadius.circular(12),
+              color: performanceColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              _getPerformanceText(indicator.insight.performance),
-              style: AppTypography.bodySmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+            child: Center(
+              child: Text(
+                indicator.selectedCountry.rank.toString(),
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: performanceColor,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            '${indicator.oecdStats.totalCountries}개국 중',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-            ),
+          title: Text(indicator.indicatorName, style: AppTypography.bodyMedium),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${indicator.selectedCountry.value.toStringAsFixed(2)} ${indicator.unit}',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              _buildCompactSparkline(indicator),
+            ],
           ),
-        ],
-      ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: performanceColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _getPerformanceText(indicator.insight.performance),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${indicator.oecdStats.totalCountries}개국 중',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,9 +222,14 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     IndicatorCode? indicatorCode;
     try {
       indicatorCode = IndicatorCode.values.firstWhere(
-        (code) => code.name.toLowerCase().contains(indicator.indicatorName.toLowerCase()) ||
-                  indicator.indicatorName.toLowerCase().contains(code.name.toLowerCase()) ||
-                  _isMatchingIndicator(code, indicator.indicatorName),
+        (code) =>
+            code.name.toLowerCase().contains(
+              indicator.indicatorName.toLowerCase(),
+            ) ||
+            indicator.indicatorName.toLowerCase().contains(
+              code.name.toLowerCase(),
+            ) ||
+            _isMatchingIndicator(code, indicator.indicatorName),
       );
     } catch (e) {
       // 매칭되는 IndicatorCode가 없으면 null
@@ -243,7 +242,9 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, child) {
         return FutureBuilder(
-          future: ref.read(sparklineViewModelProvider.notifier).loadSingleSparkline(indicatorCode!),
+          future: ref
+              .read(sparklineViewModelProvider.notifier)
+              .loadSingleSparkline(indicatorCode!),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(
@@ -268,11 +269,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
             }
 
             final sparklineData = snapshot.data!;
-            return CompactSparkline(
-              data: sparklineData,
-              width: 60,
-              height: 20,
-            );
+            return CompactSparkline(data: sparklineData, width: 60, height: 20);
           },
         );
       },
@@ -283,7 +280,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     // 특정 지표명 매칭 로직
     final codeNameLower = code.name.toLowerCase();
     final indicatorNameLower = indicatorName.toLowerCase();
-    
+
     // 키워드 매칭
     final keywordMatches = {
       'gdp': ['gdp', '국내총생산', '경제성장'],
@@ -292,7 +289,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
       'export': ['수출', 'export'],
       'import': ['수입', 'import'],
     };
-    
+
     for (final entry in keywordMatches.entries) {
       if (codeNameLower.contains(entry.key)) {
         for (final keyword in entry.value) {
@@ -302,7 +299,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -382,7 +379,11 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     }
   }
 
-  void _navigateToIndicatorDetail(BuildContext context, WidgetRef ref, IndicatorComparison indicator) {
+  void _navigateToIndicatorDetail(
+    BuildContext context,
+    WidgetRef ref,
+    IndicatorComparison indicator,
+  ) {
     // 지표 코드로부터 IndicatorCode enum을 찾기
     final indicatorCode = _getIndicatorCodeFromString(indicator.indicatorCode);
     if (indicatorCode == null) return;

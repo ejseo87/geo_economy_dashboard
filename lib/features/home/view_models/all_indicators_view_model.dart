@@ -57,7 +57,7 @@ class AllIndicatorsViewModel extends _$AllIndicatorsViewModel {
 /// 특정 카테고리 성과 요약 프로바이더
 @riverpod
 Future<CategoryPerformanceSummary> categoryPerformance(
-  Ref ref,
+  CategoryPerformanceRef ref,
   String category,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);
@@ -77,7 +77,7 @@ Future<CategoryPerformanceSummary> categoryPerformance(
 /// 단일 지표 비교 프로바이더 (개선된 버전)
 @riverpod
 Future<IndicatorComparison> singleIndicatorComparison(
-  Ref ref,
+  SingleIndicatorComparisonRef ref,
   IndicatorCode indicatorCode,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);

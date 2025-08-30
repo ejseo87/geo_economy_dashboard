@@ -26,7 +26,8 @@ void main() async {
     // Firebase 초기화 실패 시에도 앱은 계속 실행
   }
 
-  // 오프라인 캐시 서비스 초기화
+
+  // 기존 오프라인 캐시 서비스 초기화
   try {
     await OfflineCacheService.instance.initialize();
     AppLogger.info('Offline cache service initialized');

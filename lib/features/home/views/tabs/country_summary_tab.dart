@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../constants/colors.dart';
 import '../../../../constants/typography.dart';
-import '../../../countries/view_models/selected_country_provider.dart';
 import '../../widgets/real_country_summary_card.dart';
 
 /// 첫번째 탭: 10초 규칙 - 국가 요약카드 (Top 5 지표)
@@ -17,82 +16,44 @@ class CountrySummaryTab extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Consumer(
-              builder: (context, ref, child) {
-                final selectedCountry = ref.watch(selectedCountryProvider);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          selectedCountry.flagEmoji,
-                          style: const TextStyle(fontSize: 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '10초 규칙: 핵심 현황 파악',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                selectedCountry.nameKo,
-                                style: AppTypography.heading2,
-                              ),
-                              Text(
-                                'OECD 38개국 중 현재 순위',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '10초 규칙: 핵심 현황 파악',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        
-        // 국가 요약 카드
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: RealCountrySummaryCard(),
-          ),
-        ),
 
+        // 국가 요약 카드
+        const SliverToBoxAdapter(child: RealCountrySummaryCard()),
         // 설명 섹션
         SliverToBoxAdapter(
           child: Container(
@@ -143,9 +104,7 @@ class CountrySummaryTab extends ConsumerWidget {
         ),
 
         // 여백
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 32),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }

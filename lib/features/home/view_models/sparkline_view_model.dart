@@ -56,10 +56,6 @@ class SparklineViewModel extends _$SparklineViewModel {
     if (state.isLoading) return;
 
     final countryCode = ref.read(selectedCountryProvider).code;
-    if (countryCode == null) {
-      AppLogger.warning('[SparklineViewModel] No country selected');
-      return;
-    }
 
     state = state.copyWith(isLoading: true, error: null);
 
@@ -92,10 +88,6 @@ class SparklineViewModel extends _$SparklineViewModel {
     if (state.isLoading) return;
 
     final countryCode = ref.read(selectedCountryProvider).code;
-    if (countryCode == null) {
-      AppLogger.warning('[SparklineViewModel] No country selected');
-      return;
-    }
 
     state = state.copyWith(isLoading: true, error: null);
 
@@ -127,7 +119,6 @@ class SparklineViewModel extends _$SparklineViewModel {
   /// 단일 지표 스파크라인 로드
   Future<SparklineData?> loadSingleSparkline(IndicatorCode indicator) async {
     final countryCode = ref.read(selectedCountryProvider).code;
-    if (countryCode == null) return null;
 
     try {
       AppLogger.debug('[SparklineViewModel] Loading sparkline for ${indicator.name}');
@@ -200,7 +191,6 @@ class CountrySparklineViewModel extends _$CountrySparklineViewModel {
   @override
   FutureOr<List<SparklineData>> build() async {
     final country = ref.watch(selectedCountryProvider);
-    if (country == null) return [];
 
     final service = SparklineService();
     try {

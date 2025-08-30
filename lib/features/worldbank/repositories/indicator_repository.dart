@@ -292,7 +292,7 @@ class IndicatorRepository {
       indicatorName: indicatorCode.name,
       unit: indicatorCode.unit,
       year: targetYear,
-      korea: CountryData(
+      selectedCountry: CountryData(
         countryCode: targetCountryCode,
         countryName: _getCountryName(targetCountryCode),
         value: countryValue,

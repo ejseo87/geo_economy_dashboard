@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
+import '../../../constants/indicators_catalog.dart';
 import '../services/all_indicators_service.dart';
 import '../view_models/all_indicators_view_model.dart';
 import '../models/indicator_comparison.dart';
@@ -59,10 +60,9 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.dashboard,
-              size: 20,
-              color: AppColors.primary,
+            child: Text(
+              '📊',
+              style: TextStyle(fontSize: 20),
             ),
           ),
           const SizedBox(width: 8),
@@ -71,11 +71,11 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '핵심 20개 지표 전체 현황',
+                  '핵심 ${IndicatorCatalogUtils.totalIndicatorCount}개 지표 전체 현황',
                   style: AppTypography.bodyMediumBold,
                 ),
                 Text(
-                  '7개 카테고리별로 분류된 경제지표 상세보기',
+                  '${IndicatorCatalogUtils.indicatorCountByCategory.length}개 카테고리별로 분류된 경제지표 상세보기',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -225,9 +225,18 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '전체 성과 요약',
-            style: AppTypography.bodyMediumBold,
+          Row(
+            children: [
+              Text(
+                '📈',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(width: 8),
+              Text(
+                '전체 성과 요약',
+                style: AppTypography.bodyMediumBold,
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(

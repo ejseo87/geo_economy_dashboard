@@ -5,13 +5,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/gaps.dart';
-import '../../../constants/sizes.dart';
 import '../../../constants/typography.dart';
+import '../../../common/widgets/app_bar_widget.dart';
 import '../models/indicator_metadata.dart';
 import '../view_models/indicator_detail_view_model.dart';
+import '../widgets/historical_line_chart.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../../countries/models/country.dart';
-import '../../home/widgets/sparkline_chart.dart';
 import '../../home/models/sparkline_data.dart';
 
 /// 지표 상세 화면
@@ -25,6 +25,52 @@ class IndicatorDetailScreen extends ConsumerWidget {
     required this.country,
   });
 
+  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref, bool isBookmarked) {
+    return AppBar(
+      title: Text(
+        indicatorCode.name,
+        style: AppTypography.heading3.copyWith(
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      backgroundColor: AppColors.white,
+      elevation: 1,
+      shadowColor: AppColors.textPrimary.withValues(alpha: 0.1),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+        onPressed: () {
+          try {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          } catch (e) {
+            context.go('/home');
+          }
+        },
+      ),
+      actions: [
+        IconButton(
+          icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 20),
+          color: AppColors.textSecondary,
+          onPressed: () => _showShareOptions(context),
+        ),
+        IconButton(
+          icon: FaIcon(
+            isBookmarked
+                ? FontAwesomeIcons.solidBookmark
+                : FontAwesomeIcons.bookmark,
+            size: 20,
+          ),
+          color: isBookmarked ? AppColors.accent : AppColors.textSecondary,
+          onPressed: () => _toggleBookmark(ref),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(
@@ -37,50 +83,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          indicatorCode.name,
-          style: AppTypography.heading3.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        backgroundColor: AppColors.white,
-        elevation: 1,
-        shadowColor: AppColors.textPrimary.withValues(alpha: 0.1),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () {
-            try {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/home');
-              }
-            } catch (e) {
-              // 네비게이션 에러 발생 시 홈으로 이동
-              context.go('/home');
-            }
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 20),
-            color: AppColors.textSecondary,
-            onPressed: () => _showShareOptions(context),
-          ),
-          IconButton(
-            icon: FaIcon(
-              isBookmarked
-                  ? FontAwesomeIcons.solidBookmark
-                  : FontAwesomeIcons.bookmark,
-              size: 20,
-            ),
-            color: isBookmarked ? AppColors.accent : AppColors.textSecondary,
-            onPressed: () => _toggleBookmark(ref),
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, ref, isBookmarked),
       body: detailAsync.when(
         loading: () => _buildLoadingState(),
         error: (error, stack) => _buildErrorState(error.toString()),
@@ -351,27 +354,15 @@ class IndicatorDetailScreen extends ConsumerWidget {
   Widget _buildHistoricalChart(IndicatorDetail detail) {
     if (detail.historicalData.isEmpty) return const SizedBox.shrink();
 
-    // 스파크라인 데이터로 변환
-    final sparklinePoints = detail.historicalData
-        .map(
-          (point) => SparklinePoint(
-            year: point.year,
-            value: point.value,
-            isEstimated: point.isEstimated,
-          ),
-        )
-        .toList();
-
-    final sparklineData = SparklineData(
-      indicatorCode: detail.metadata.code,
-      indicatorName: detail.metadata.name,
-      unit: detail.metadata.unit,
-      countryCode: detail.countryCode,
-      points: sparklinePoints,
-      trend: _mapTrendToSparkline(detail.trendAnalysis.longTerm),
-      changePercentage: _calculateChangePercentage(sparklinePoints),
-      lastUpdated: DateTime.now(),
-    );
+    // 히스토리컬 차트 데이터로 변환
+    final countryData = <String, List<HistoricalDataPoint>>{
+      country.code: detail.historicalData.map((point) => 
+        HistoricalDataPoint(
+          year: point.year,
+          value: point.value,
+        ),
+      ).toList(),
+    };
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -398,7 +389,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
               ),
               Gaps.h8,
               Text(
-                '${detail.historicalData.length}년간 추이',
+                '10년간 히스토리컬 추이',
                 style: AppTypography.heading3.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -406,11 +397,13 @@ class IndicatorDetailScreen extends ConsumerWidget {
             ],
           ),
           Gaps.v16,
-          SparklineChart(
-            data: sparklineData,
-            width: double.infinity,
-            height: 120,
-            showMetadata: true,
+          HistoricalLineChart(
+            indicator: indicatorCode,
+            countryData: countryData,
+            selectedCountry: country.code,
+            height: 250,
+            showLegend: false,
+            showTooltips: true,
           ),
         ],
       ),

@@ -36,7 +36,7 @@ class ComparisonService {
       indicatorName: 'GDP 성장률',
       unit: '%',
       year: 2023,
-      korea: CountryData(
+      selectedCountry: CountryData(
         countryCode: 'KOR',
         countryName: '대한민국',
         value: koreaValue,
@@ -106,7 +106,7 @@ class ComparisonService {
       indicatorName: '실업률',
       unit: '%',
       year: 2023,
-      korea: CountryData(
+      selectedCountry: CountryData(
         countryCode: 'KOR',
         countryName: '대한민국',
         value: koreaValue,

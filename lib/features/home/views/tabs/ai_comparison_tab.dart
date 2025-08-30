@@ -18,82 +18,37 @@ class AIComparisonTab extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Consumer(
-              builder: (context, ref, child) {
-                final selectedCountry = ref.watch(selectedCountryProvider);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: FaIcon(
-                            FontAwesomeIcons.robot,
-                            size: 20,
-                            color: AppColors.accent,
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer, size: 14, color: AppColors.accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        '1분 규칙: 심화 분석',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'AI 추천 지표 비교',
-                                style: AppTypography.heading2,
-                              ),
-                              Text(
-                                '${selectedCountry.nameKo}의 핵심 지표 자동 분석',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.timer,
-                            size: 14,
-                            color: AppColors.accent,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '1분 규칙: 심화 분석',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.accent,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        
         // AI 추천 비교 카드
         const SliverToBoxAdapter(
           child: Padding(
@@ -156,9 +111,7 @@ class AIComparisonTab extends ConsumerWidget {
         ),
 
         // 여백
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 32),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }

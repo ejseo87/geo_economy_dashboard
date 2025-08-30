@@ -3,7 +3,7 @@ class IndicatorComparison {
   final String indicatorName;
   final String unit;
   final int year;
-  final CountryData korea;
+  final CountryData selectedCountry;
   final OECDStatistics oecdStats;
   final List<CountryData> similarCountries;
   final ComparisonInsight insight;
@@ -13,7 +13,7 @@ class IndicatorComparison {
     required this.indicatorName,
     required this.unit,
     required this.year,
-    required this.korea,
+    required this.selectedCountry,
     required this.oecdStats,
     required this.similarCountries,
     required this.insight,
@@ -25,7 +25,7 @@ class IndicatorComparison {
       'indicatorName': indicatorName,
       'unit': unit,
       'year': year,
-      'korea': korea.toJson(),
+      'selectedCountry': selectedCountry.toJson(),
       'oecdStats': oecdStats.toJson(),
       'similarCountries': similarCountries.map((e) => e.toJson()).toList(),
       'insight': insight.toJson(),
@@ -38,7 +38,7 @@ class IndicatorComparison {
       indicatorName: json['indicatorName'] as String,
       unit: json['unit'] as String,
       year: json['year'] as int,
-      korea: CountryData.fromJson(json['korea'] as Map<String, dynamic>),
+      selectedCountry: CountryData.fromJson(json['selectedCountry'] as Map<String, dynamic>),
       oecdStats: OECDStatistics.fromJson(json['oecdStats'] as Map<String, dynamic>),
       similarCountries: (json['similarCountries'] as List)
           .map((e) => CountryData.fromJson(e as Map<String, dynamic>))
