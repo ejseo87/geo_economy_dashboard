@@ -84,7 +84,8 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
                       showTitles: true,
                       reservedSize: 30,
                       interval: 2,
-                      getTitlesWidget: (value, meta) => _buildBottomTitle(value, minYear),
+                      getTitlesWidget: (value, meta) =>
+                          _buildBottomTitle(value, minYear),
                     ),
                   ),
                   rightTitles: const AxisTitles(
@@ -106,7 +107,9 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
                 minY: minValue,
                 maxY: maxValue,
                 lineBarsData: _buildLineBarsData(minYear),
-                lineTouchData: widget.showTooltips ? _buildTouchData(minYear) : LineTouchData(enabled: false),
+                lineTouchData: widget.showTooltips
+                    ? _buildTouchData(minYear)
+                    : LineTouchData(enabled: false),
               ),
             ),
           ),
@@ -148,11 +151,10 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
       children: widget.countryData.keys.map((countryCode) {
         final color = _getCountryColor(countryCode);
         final isSelected = widget.selectedCountry == countryCode;
-        
+
         return InkWell(
-          onTap: () => widget.onCountrySelected?.call(
-            isSelected ? null : countryCode,
-          ),
+          onTap: () =>
+              widget.onCountrySelected?.call(isSelected ? null : countryCode),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -160,14 +162,11 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
               vertical: Sizes.size6,
             ),
             decoration: BoxDecoration(
-              color: isSelected 
-                ? color.withValues(alpha: 0.1) 
-                : Colors.transparent,
+              color: isSelected
+                  ? color.withValues(alpha: 0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: color,
-                width: isSelected ? 2 : 1,
-              ),
+              border: Border.all(color: color, width: isSelected ? 2 : 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -184,7 +183,9 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
                 Text(
                   _getCountryName(countryCode),
                   style: AppTypography.bodySmall.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                     color: isSelected ? color : AppColors.textPrimary,
                   ),
                 ),
@@ -202,9 +203,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
       padding: const EdgeInsets.only(right: 4),
       child: Text(
         formatted,
-        style: AppTypography.caption.copyWith(
-          color: AppColors.textSecondary,
-        ),
+        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         textAlign: TextAlign.right,
       ),
     );
@@ -214,9 +213,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     final year = minYear + value.toInt();
     return Text(
       year.toString(),
-      style: AppTypography.caption.copyWith(
-        color: AppColors.textSecondary,
-      ),
+      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
     );
   }
 
@@ -225,11 +222,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
       padding: const EdgeInsets.only(top: Sizes.size8),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 14,
-            color: AppColors.textSecondary,
-          ),
+          Icon(Icons.info_outline, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: Sizes.size4),
           Text(
             '$minYear년 ~ $maxYear년 데이터',
@@ -256,14 +249,12 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
 
     widget.countryData.forEach((countryCode, dataPoints) {
       final color = _getCountryColor(countryCode);
-      final isHighlighted = widget.selectedCountry == null || 
-                           widget.selectedCountry == countryCode;
-      
+      final isHighlighted =
+          widget.selectedCountry == null ||
+          widget.selectedCountry == countryCode;
+
       final spots = dataPoints.map((point) {
-        return FlSpot(
-          (point.year - minYear).toDouble(),
-          point.value,
-        );
+        return FlSpot((point.year - minYear).toDouble(), point.value);
       }).toList();
 
       lines.add(
@@ -305,13 +296,16 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
         tooltipRoundedRadius: 8,
         tooltipPadding: const EdgeInsets.all(8),
         tooltipMargin: 16,
-        getTooltipColor: (touchedSpot) => AppColors.textPrimary.withValues(alpha: 0.8),
+        getTooltipColor: (touchedSpot) =>
+            AppColors.textPrimary.withValues(alpha: 0.8),
         getTooltipItems: (touchedSpots) {
           return touchedSpots.map((LineBarSpot touchedSpot) {
-            final countryCode = widget.countryData.keys.elementAt(touchedSpot.barIndex);
+            final countryCode = widget.countryData.keys.elementAt(
+              touchedSpot.barIndex,
+            );
             final year = minYear + touchedSpot.x.toInt();
             final value = touchedSpot.y;
-            
+
             return LineTooltipItem(
               '${_getCountryName(countryCode)}\n$year년: ${_formatValue(value)}${widget.indicator.unit}',
               TextStyle(
@@ -328,7 +322,9 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
           if (touchResponse != null && touchResponse.lineBarSpots != null) {
             final spot = touchResponse.lineBarSpots!.first;
             hoveredSpotIndex = spot.x.toInt();
-            hoveredCountryCode = widget.countryData.keys.elementAt(spot.barIndex);
+            hoveredCountryCode = widget.countryData.keys.elementAt(
+              spot.barIndex,
+            );
           } else {
             hoveredSpotIndex = null;
             hoveredCountryCode = null;
@@ -342,7 +338,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     int? minYear;
     for (var dataPoints in widget.countryData.values) {
       for (final point in dataPoints) {
-        if (minYear == null || point.year < minYear!) {
+        if (minYear == null || point.year < minYear) {
           minYear = point.year;
         }
       }
@@ -354,7 +350,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     int? maxYear;
     for (var dataPoints in widget.countryData.values) {
       for (final point in dataPoints) {
-        if (maxYear == null || point.year > maxYear!) {
+        if (maxYear == null || point.year > maxYear) {
           maxYear = point.year;
         }
       }
@@ -366,7 +362,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     double? minValue;
     for (var dataPoints in widget.countryData.values) {
       for (final point in dataPoints) {
-        if (minValue == null || point.value < minValue!) {
+        if (minValue == null || point.value < minValue) {
           minValue = point.value;
         }
       }
@@ -379,7 +375,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     double? maxValue;
     for (var dataPoints in widget.countryData.values) {
       for (final point in dataPoints) {
-        if (maxValue == null || point.value > maxValue!) {
+        if (maxValue == null || point.value > maxValue) {
           maxValue = point.value;
         }
       }
@@ -409,21 +405,50 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
       Colors.pink,
       Colors.brown,
     ];
-    
+
     final index = widget.countryData.keys.toList().indexOf(countryCode);
     return colors[index % colors.length];
   }
 
   String _getCountryName(String countryCode) {
     const countryNames = {
-      'KOR': '한국', 'USA': '미국', 'JPN': '일본', 'DEU': '독일', 'GBR': '영국',
-      'FRA': '프랑스', 'ITA': '이탈리아', 'CAN': '캐나다', 'AUS': '호주', 'ESP': '스페인',
-      'NLD': '네덜란드', 'BEL': '벨기에', 'CHE': '스위스', 'AUT': '오스트리아', 'SWE': '스웨덴',
-      'NOR': '노르웨이', 'DNK': '덴마크', 'FIN': '핀란드', 'POL': '폴란드', 'CZE': '체코',
-      'HUN': '헝가리', 'SVK': '슬로바키아', 'SVN': '슬로베니아', 'EST': '에스토니아',
-      'LVA': '라트비아', 'LTU': '리투아니아', 'PRT': '포르투갈', 'GRC': '그리스',
-      'TUR': '튀르키예', 'MEX': '멕시코', 'CHL': '칠레', 'COL': '콜롬비아', 'CRI': '코스타리카',
-      'ISL': '아이슬란드', 'IRL': '아일랜드', 'ISR': '이스라엘', 'LUX': '룩셈부르크',
+      'KOR': '한국',
+      'USA': '미국',
+      'JPN': '일본',
+      'DEU': '독일',
+      'GBR': '영국',
+      'FRA': '프랑스',
+      'ITA': '이탈리아',
+      'CAN': '캐나다',
+      'AUS': '호주',
+      'ESP': '스페인',
+      'NLD': '네덜란드',
+      'BEL': '벨기에',
+      'CHE': '스위스',
+      'AUT': '오스트리아',
+      'SWE': '스웨덴',
+      'NOR': '노르웨이',
+      'DNK': '덴마크',
+      'FIN': '핀란드',
+      'POL': '폴란드',
+      'CZE': '체코',
+      'HUN': '헝가리',
+      'SVK': '슬로바키아',
+      'SVN': '슬로베니아',
+      'EST': '에스토니아',
+      'LVA': '라트비아',
+      'LTU': '리투아니아',
+      'PRT': '포르투갈',
+      'GRC': '그리스',
+      'TUR': '튀르키예',
+      'MEX': '멕시코',
+      'CHL': '칠레',
+      'COL': '콜롬비아',
+      'CRI': '코스타리카',
+      'ISL': '아이슬란드',
+      'IRL': '아일랜드',
+      'ISR': '이스라엘',
+      'LUX': '룩셈부르크',
       'NZL': '뉴질랜드',
     };
     return countryNames[countryCode] ?? countryCode;
@@ -446,10 +471,7 @@ class HistoricalDataPoint {
   final int year;
   final double value;
 
-  const HistoricalDataPoint({
-    required this.year,
-    required this.value,
-  });
+  const HistoricalDataPoint({required this.year, required this.value});
 
   factory HistoricalDataPoint.fromJson(Map<String, dynamic> json) {
     return HistoricalDataPoint(
@@ -459,10 +481,7 @@ class HistoricalDataPoint {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'year': year,
-      'value': value,
-    };
+    return {'year': year, 'value': value};
   }
 
   @override
@@ -472,8 +491,8 @@ class HistoricalDataPoint {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is HistoricalDataPoint &&
-           other.year == year &&
-           other.value == value;
+        other.year == year &&
+        other.value == value;
   }
 
   @override

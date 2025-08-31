@@ -6,11 +6,10 @@ import '../../../constants/colors.dart';
 import '../../../constants/gaps.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
-import '../../../common/widgets/share_card_widget.dart';
 import '../models/country_summary.dart';
 import '../view_models/country_summary_view_model.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 import '../../favorites/models/favorite_item.dart';
 import '../../favorites/widgets/favorites_floating_button.dart';
 

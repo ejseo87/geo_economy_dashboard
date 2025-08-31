@@ -239,6 +239,25 @@ class AllIndicatorsService {
     return PerformanceLevel.average;
   }
 
+  /// 단일 지표 비교 데이터 가져오기
+  Future<IndicatorComparison?> getIndicatorComparison({
+    required String countryCode,
+    required IndicatorCode indicatorCode,
+    int? year,
+  }) async {
+    try {
+      final comparison = await _repository.generateIndicatorComparison(
+        indicatorCode: indicatorCode,
+        countryCode: countryCode,
+        year: year,
+      );
+      return comparison;
+    } catch (e) {
+      AppLogger.error('[AllIndicatorsService] Error loading ${indicatorCode.name}: $e');
+      return null;
+    }
+  }
+
   /// 리소스 정리
   void dispose() {
     _repository.dispose();

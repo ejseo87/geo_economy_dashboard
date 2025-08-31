@@ -8,9 +8,9 @@ import '../../../constants/sizes.dart';
 import '../models/country.dart';
 import '../widgets/country_indicators_section.dart';
 import '../widgets/country_overview_card.dart';
-import '../../favorites/widgets/favorites_floating_button.dart';
-import '../../favorites/models/favorite_item.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../../features/favorites/widgets/favorites_floating_button.dart';
+import '../../../features/favorites/models/favorite_item.dart';
+import '../../../features/worldbank/models/indicator_codes.dart';
 
 class CountryDetailScreen extends ConsumerWidget {
   static const String routeName = 'countryDetail';

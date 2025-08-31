@@ -4,7 +4,7 @@ import '../models/indicator_comparison.dart';
 import '../services/real_comparison_service.dart';
 import '../../worldbank/repositories/indicator_repository.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 
 part 'comparison_view_model.g.dart';
 

@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
-import 'package:geo_economy_dashboard/features/countries/models/country.dart';
+import 'package:geo_economy_dashboard/common/countries/models/country.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/colors.dart';
 import '../../../../constants/typography.dart';
-import '../../../countries/view_models/selected_country_provider.dart';
+import '../../../../common/countries/view_models/selected_country_provider.dart';
 import '../../widgets/all_indicators_section.dart';
 
 /// 세번째 탭: 핵심 20지표 전체 + QoQ/YoY 변화

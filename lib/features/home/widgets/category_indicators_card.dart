@@ -8,10 +8,8 @@ import '../../../constants/performance_colors.dart';
 import '../../../constants/indicators_catalog.dart';
 import '../models/indicator_comparison.dart';
 import '../view_models/all_indicators_view_model.dart';
-import '../view_models/sparkline_view_model.dart';
-import '../widgets/sparkline_chart.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 
 /// 카테고리별 지표 표시 카드
 class CategoryIndicatorsCard extends ConsumerWidget {
@@ -175,13 +173,11 @@ class CategoryIndicatorsCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${indicator.selectedCountry.value.toStringAsFixed(2)} ${indicator.unit}',
+                '${indicator.selectedCountry.value.toStringAsFixed(1)} ${indicator.unit}',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 4),
-              _buildCompactSparkline(indicator),
             ],
           ),
           trailing: Column(
@@ -217,91 +213,6 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactSparkline(IndicatorComparison indicator) {
-    // 지표 코드로부터 IndicatorCode 찾기
-    IndicatorCode? indicatorCode;
-    try {
-      indicatorCode = IndicatorCode.values.firstWhere(
-        (code) =>
-            code.name.toLowerCase().contains(
-              indicator.indicatorName.toLowerCase(),
-            ) ||
-            indicator.indicatorName.toLowerCase().contains(
-              code.name.toLowerCase(),
-            ) ||
-            _isMatchingIndicator(code, indicator.indicatorName),
-      );
-    } catch (e) {
-      // 매칭되는 IndicatorCode가 없으면 null
-    }
-
-    if (indicatorCode == null) {
-      return const SizedBox(height: 20); // 빈 공간
-    }
-
-    return Consumer(
-      builder: (context, ref, child) {
-        return FutureBuilder(
-          future: ref
-              .read(sparklineViewModelProvider.notifier)
-              .loadSingleSparkline(indicatorCode!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
-                height: 20,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                  ),
-                ),
-              );
-            }
-
-            if (snapshot.hasError || !snapshot.hasData) {
-              return const SizedBox(height: 20);
-            }
-
-            final sparklineData = snapshot.data!;
-            return CompactSparkline(data: sparklineData, width: 60, height: 20);
-          },
-        );
-      },
-    );
-  }
-
-  bool _isMatchingIndicator(IndicatorCode code, String indicatorName) {
-    // 특정 지표명 매칭 로직
-    final codeNameLower = code.name.toLowerCase();
-    final indicatorNameLower = indicatorName.toLowerCase();
-
-    // 키워드 매칭
-    final keywordMatches = {
-      'gdp': ['gdp', '국내총생산', '경제성장'],
-      'unemployment': ['실업', '실업률'],
-      'inflation': ['인플레이션', '물가', 'cpi'],
-      'export': ['수출', 'export'],
-      'import': ['수입', 'import'],
-    };
-
-    for (final entry in keywordMatches.entries) {
-      if (codeNameLower.contains(entry.key)) {
-        for (final keyword in entry.value) {
-          if (indicatorNameLower.contains(keyword)) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
 
   Color _getCategoryColor() {
     switch (category) {

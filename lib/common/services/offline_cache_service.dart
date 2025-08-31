@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../logger.dart';
 import '../../features/indicators/models/indicator_metadata.dart';
 import '../../features/worldbank/models/indicator_codes.dart';
-import '../../features/countries/models/country.dart';
+import '../countries/models/country.dart';
 
 /// 오프라인 캐시 서비스
 /// SharedPreferences와 메모리 캐시를 사용하여 데이터를 로컬에 저장

@@ -6,9 +6,7 @@ import '../../../constants/gaps.dart';
 import '../../../constants/typography.dart';
 import '../models/indicator_comparison.dart';
 import '../view_models/comparison_view_model.dart';
-import '../view_models/sparkline_view_model.dart';
-import '../widgets/sparkline_chart.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 import '../../worldbank/models/indicator_codes.dart';
 
 class RecommendedComparisonCard extends ConsumerStatefulWidget {
@@ -271,7 +269,6 @@ class _RecommendedComparisonCardState extends ConsumerState<RecommendedCompariso
         children: [
           _buildIndicatorHeader(indicator),
           Gaps.v12,
-          _buildSparklineSection(indicator),
           Gaps.v12,
           _buildOECDComparison(indicator),
           Gaps.v12,
@@ -329,141 +326,6 @@ class _RecommendedComparisonCardState extends ConsumerState<RecommendedCompariso
     );
   }
 
-  Widget _buildSparklineSection(IndicatorComparison indicator) {
-    // 지표 코드로부터 IndicatorCode 찾기
-    IndicatorCode? indicatorCode;
-    try {
-      indicatorCode = IndicatorCode.values.firstWhere(
-        (code) => code.name.toLowerCase().contains(indicator.indicatorName.toLowerCase()) ||
-                  indicator.indicatorName.toLowerCase().contains(code.name.toLowerCase()),
-      );
-    } catch (e) {
-      // 매칭되는 IndicatorCode가 없으면 null
-    }
-
-    if (indicatorCode == null) {
-      return const SizedBox.shrink(); // 스파크라인 없음
-    }
-
-    return Consumer(
-      builder: (context, ref, child) {
-        return FutureBuilder(
-          future: ref.read(sparklineViewModelProvider.notifier).loadSingleSparkline(indicatorCode!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildSparklineLoading();
-            }
-
-            if (snapshot.hasError || !snapshot.hasData) {
-              return const SizedBox.shrink();
-            }
-
-            final sparklineData = snapshot.data!;
-            return _buildSparklineContent(sparklineData);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSparklineLoading() {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSparklineContent(sparklineData) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '5년 트렌드',
-                style: AppTypography.bodySmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              if (sparklineData.changePercentage != null) ...[
-                Row(
-                  children: [
-                    Icon(
-                      _getSparklineTrendIcon(sparklineData.trend),
-                      size: 12,
-                      color: _getSparklineTrendColor(sparklineData.trend),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${sparklineData.changePercentage! > 0 ? '+' : ''}${sparklineData.changePercentage!.toStringAsFixed(1)}%',
-                      style: AppTypography.caption.copyWith(
-                        color: _getSparklineTrendColor(sparklineData.trend),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-          Gaps.v8,
-          SparklineChart(
-            data: sparklineData,
-            width: double.infinity,
-            height: 32,
-            showMetadata: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getSparklineTrendIcon(trend) {
-    switch (trend.toString().split('.').last) {
-      case 'rising':
-        return Icons.trending_up;
-      case 'falling':
-        return Icons.trending_down;
-      case 'volatile':
-        return Icons.timeline;
-      case 'stable':
-      default:
-        return Icons.trending_flat;
-    }
-  }
-
-  Color _getSparklineTrendColor(trend) {
-    switch (trend.toString().split('.').last) {
-      case 'rising':
-        return AppColors.accent;
-      case 'falling':
-        return AppColors.error;
-      case 'volatile':
-        return Colors.orange;
-      case 'stable':
-      default:
-        return AppColors.primary;
-    }
-  }
 
   Widget _buildOECDComparison(IndicatorComparison indicator) {
     final stats = indicator.oecdStats;

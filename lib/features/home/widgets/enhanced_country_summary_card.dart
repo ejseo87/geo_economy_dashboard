@@ -9,7 +9,7 @@ import '../../../constants/performance_colors.dart';
 import '../models/country_summary.dart';
 import '../models/indicator_comparison.dart';
 import '../view_models/country_summary_view_model.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 import '../../worldbank/models/indicator_codes.dart';
 
 /// PRD 기준 10초-1분-5분 규칙을 적용한 개선된 국가 요약카드

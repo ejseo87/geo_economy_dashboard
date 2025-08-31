@@ -4,7 +4,7 @@ import '../../../common/logger.dart';
 import '../models/indicator_metadata.dart';
 import '../services/indicator_detail_service.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/models/country.dart';
+import '../../../common/countries/models/country.dart';
 
 part 'indicator_detail_view_model.g.dart';
 

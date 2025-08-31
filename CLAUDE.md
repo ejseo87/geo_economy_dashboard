@@ -3,17 +3,20 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
+
 - **Name**: geo_economy_dashboard
 - **Type**: Flutter mobile/web application with Firebase backend
 - **SDK**: Flutter 3.8.1+
 - **Description**: A Flutter-based geo economy dashboard application with authentication and settings management
 
 ## Development Environment
+
 - **Shell**: Use `zsh` for all terminal commands
 - **Platform**: Multi-platform Flutter app (iOS, Android, Web, macOS, Linux, Windows)
 - **Conversation Language**: Always use Korean for conversation per .cursorrules
 
 ## Architecture & Key Technologies
+
 - **State Management**: Riverpod with code generation (`riverpod_generator`, `riverpod_annotation`)
 - **Navigation**: GoRouter with authentication guards
 - **Backend**: Firebase (Core, Auth, Firestore, Storage)
@@ -22,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Design System**: Custom design tokens with consistent color palette and typography
 
 ### Project Structure
+
 ```
 lib/
 ├── common/                 # Shared utilities and widgets
@@ -43,12 +47,14 @@ lib/
 ```
 
 ### State Management Pattern
+
 - **ViewModels**: Use Riverpod providers with `@riverpod` annotation
 - **UI States**: Define with Freezed for immutable state classes
 - **Repositories**: Separate data layer with repository pattern
 - **Controllers**: Business logic layer that updates UI state
 
 ## Common Commands
+
 ```bash
 # Install dependencies
 flutter pub get
@@ -85,33 +91,39 @@ flutter build web          # Web
 ```
 
 ## Development Guidelines (per .cursorrules)
+
 - **Language**: Use English for code, Korean for conversation
 - **Type Safety**: Always declare types, avoid `var`
 - **Architecture**: Follow clean architecture with feature-based organization
 - **Widget Structure**: Avoid deep nesting, break into smaller reusable widgets
-- **State**: Use Riverpod for state management, Freezed for UI states
+- **State**: Use Riverpod for state management
 - **Testing**: Write unit tests for public functions, widget tests for UI
 
 ### Design System Usage
+
 - **Colors**: Use `AppColors` constants (primary: #0055A4, accent: #00A86B)
 - **Typography**: Use `AppTypography` styles with appropriate fonts
 - **Buttons**: Use `FormButtonWidget` with `ButtonType.primary` or `ButtonType.secondary`
 - **Cards**: Use `AppCard` component for consistent card styling (12px radius, 16px padding, 2dp shadow)
 
 ## Firebase Configuration
+
 - Firebase is initialized in `main.dart` with error handling
 - `GoogleService-Info.plist` is configured for iOS
 - `google-services.json` is configured for Android
 - Authentication state is managed through `AuthenticationRepository`
 
 ## Code Generation Requirements
+
 After modifying any files with:
+
 - `@riverpod` annotations
-- `@freezed` classes  
+- `@freezed` classes
 - `@JsonSerializable` classes
 
 Run: `dart run build_runner build --delete-conflicting-outputs`
 
 ## Known Issues
+
 - Firebase initialization may fail in some environments (handled gracefully)
 - iOS development requires proper codesign setup (use Apple's codesign, not conda's)

@@ -11,7 +11,7 @@ import '../models/indicator_metadata.dart';
 import '../view_models/indicator_detail_view_model.dart';
 import '../widgets/historical_line_chart.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/models/country.dart';
+import '../../../common/countries/models/country.dart';
 import '../../home/models/sparkline_data.dart';
 
 /// 지표 상세 화면
@@ -25,7 +25,11 @@ class IndicatorDetailScreen extends ConsumerWidget {
     required this.country,
   });
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref, bool isBookmarked) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    WidgetRef ref,
+    bool isBookmarked,
+  ) {
     return AppBar(
       title: Text(
         indicatorCode.name,
@@ -356,12 +360,12 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
     // 히스토리컬 차트 데이터로 변환
     final countryData = <String, List<HistoricalDataPoint>>{
-      country.code: detail.historicalData.map((point) => 
-        HistoricalDataPoint(
-          year: point.year,
-          value: point.value,
-        ),
-      ).toList(),
+      country.code: detail.historicalData
+          .map(
+            (point) =>
+                HistoricalDataPoint(year: point.year, value: point.value),
+          )
+          .toList(),
     };
 
     return Container(

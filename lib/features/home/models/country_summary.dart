@@ -24,7 +24,9 @@ class CountrySummary {
       'countryCode': countryCode,
       'countryName': countryName,
       'flagEmoji': flagEmoji,
-      'topIndicators': topIndicators.map((indicator) => indicator.toJson()).toList(),
+      'topIndicators': topIndicators
+          .map((indicator) => indicator.toJson())
+          .toList(),
       'overallRanking': overallRanking,
       'lastUpdated': lastUpdated.toIso8601String(),
     };
@@ -37,7 +39,10 @@ class CountrySummary {
       countryName: json['countryName'] as String,
       flagEmoji: json['flagEmoji'] as String,
       topIndicators: (json['topIndicators'] as List)
-          .map((indicator) => KeyIndicator.fromJson(indicator as Map<String, dynamic>))
+          .map(
+            (indicator) =>
+                KeyIndicator.fromJson(indicator as Map<String, dynamic>),
+          )
           .toList(),
       overallRanking: json['overallRanking'] as String,
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
@@ -73,11 +78,11 @@ class KeyIndicator {
 
   /// 순위 기반 배지 텍스트
   String get rankBadge {
-    if (percentile >= 90) return 'TOP 10%';
-    if (percentile >= 75) return 'Q1';
-    if (percentile >= 50) return 'Q2';
-    if (percentile >= 25) return 'Q3';
-    return 'Q4';
+    if (percentile >= 90) return '~10%';
+    if (percentile >= 75) return '10~25%';
+    if (percentile >= 50) return '25~50%';
+    if (percentile >= 25) return '50~75%';
+    return '75~100%';
   }
 
   /// 성과 레벨 이모지

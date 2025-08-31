@@ -6,7 +6,7 @@ import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
 import '../models/country.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../../features/worldbank/models/indicator_codes.dart';
 
 class CountryIndicatorsSection extends ConsumerWidget {
   final Country country;

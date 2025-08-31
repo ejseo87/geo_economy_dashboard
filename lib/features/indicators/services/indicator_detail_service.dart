@@ -4,21 +4,21 @@ import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart
 import 'package:geo_economy_dashboard/common/services/network_service.dart';
 import '../models/indicator_metadata.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../worldbank/repositories/enhanced_indicator_repository.dart';
-import '../../countries/models/country.dart';
+import '../../worldbank/repositories/indicator_repository.dart';
+import '../../../common/countries/models/country.dart';
 import '../../home/models/indicator_comparison.dart';
 
 /// 지표 상세 정보 서비스 (오프라인 캐시 지원)
 class IndicatorDetailService {
-  final EnhancedIndicatorRepository _repository;
+  final IndicatorRepository _repository;
   final OfflineCacheService _cacheService;
   final NetworkService _networkService;
 
   IndicatorDetailService({
-    EnhancedIndicatorRepository? repository,
+    IndicatorRepository? repository,
     OfflineCacheService? cacheService,
     NetworkService? networkService,
-  }) : _repository = repository ?? EnhancedIndicatorRepository(),
+  }) : _repository = repository ?? IndicatorRepository(),
        _cacheService = cacheService ?? OfflineCacheService.instance,
        _networkService = networkService ?? NetworkService.instance;
 

@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/indicator_comparison.dart';
 import '../services/all_indicators_service.dart';
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/view_models/selected_country_provider.dart';
+import '../../../common/countries/view_models/selected_country_provider.dart';
 
 part 'all_indicators_view_model.g.dart';
 

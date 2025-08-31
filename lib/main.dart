@@ -1,6 +1,7 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart';
 import 'package:geo_economy_dashboard/common/services/network_service.dart';
+import 'package:geo_economy_dashboard/common/countries/services/countries_service.dart';
 import 'package:geo_economy_dashboard/features/favorites/services/favorites_service.dart';
 import 'package:geo_economy_dashboard/features/notifications/services/notification_service.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
@@ -57,6 +58,14 @@ void main() async {
     AppLogger.info('Notification service initialized');
   } catch (e) {
     AppLogger.error('Failed to initialize notification service: $e');
+  }
+
+  // 국가 서비스 초기화
+  try {
+    await CountriesService.instance.initialize();
+    AppLogger.info('Countries service initialized');
+  } catch (e) {
+    AppLogger.error('Failed to initialize countries service: $e');
   }
 
   final preferences = await SharedPreferences.getInstance();

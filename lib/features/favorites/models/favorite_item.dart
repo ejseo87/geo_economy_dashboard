@@ -1,5 +1,5 @@
 import '../../worldbank/models/indicator_codes.dart';
-import '../../countries/models/country.dart';
+import '../../../common/countries/models/country.dart';
 
 /// 즐겨찾기 아이템 타입
 enum FavoriteType {

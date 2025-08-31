@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
-import 'package:geo_economy_dashboard/features/countries/view_models/selected_country_provider.dart';
+import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import '../../../common/widgets/app_bar_widget.dart';
 import '../models/tab_state.dart';
