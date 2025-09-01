@@ -309,7 +309,7 @@ class _IndicatorMetadataProviderElement
       (origin as IndicatorMetadataProvider).indicatorCode;
 }
 
-String _$bookmarkViewModelHash() => r'a86aa7838d485b285e4a8e655101850ce9a97f54';
+String _$bookmarkViewModelHash() => r'6a3086c73d226b95cc48efb382776861f644a1c3';
 
 /// 북마크 관리 뷰모델
 ///

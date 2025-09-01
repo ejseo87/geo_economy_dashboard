@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/logger.dart';
 import '../models/indicator_metadata.dart';
 import '../services/indicator_detail_service.dart';
@@ -70,10 +71,36 @@ IndicatorDetailMetadata indicatorMetadata(
 /// 북마크 관리 뷰모델
 @riverpod
 class BookmarkViewModel extends _$BookmarkViewModel {
+  static const String _bookmarksKey = 'user_bookmarks';
+  
   @override
   Set<String> build() {
-    // 로컬 스토리지에서 북마크 목록 로드 (추후 구현)
+    _loadBookmarks();
     return <String>{};
+  }
+
+  /// SharedPreferences에서 북마크 로드
+  Future<void> _loadBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bookmarksList = prefs.getStringList(_bookmarksKey) ?? [];
+      state = Set<String>.from(bookmarksList);
+      AppLogger.debug('[BookmarkViewModel] Loaded ${bookmarksList.length} bookmarks');
+    } catch (e) {
+      AppLogger.error('[BookmarkViewModel] Error loading bookmarks: $e');
+      state = <String>{};
+    }
+  }
+
+  /// SharedPreferences에 북마크 저장
+  Future<void> _saveBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_bookmarksKey, state.toList());
+      AppLogger.debug('[BookmarkViewModel] Saved ${state.length} bookmarks');
+    } catch (e) {
+      AppLogger.error('[BookmarkViewModel] Error saving bookmarks: $e');
+    }
   }
 
   /// 북마크 토글
@@ -90,7 +117,7 @@ class BookmarkViewModel extends _$BookmarkViewModel {
     }
     
     state = newBookmarks;
-    // 로컬 스토리지에 저장 (추후 구현)
+    _saveBookmarks();
   }
 
   /// 북마크 상태 확인
@@ -102,8 +129,43 @@ class BookmarkViewModel extends _$BookmarkViewModel {
   /// 모든 북마크 제거
   void clearAllBookmarks() {
     state = <String>{};
+    _saveBookmarks();
     AppLogger.debug('[BookmarkViewModel] Cleared all bookmarks');
   }
+
+  /// 북마크 목록 가져오기 (파싱된 형태)
+  List<BookmarkItem> getBookmarkItems() {
+    return state.map((bookmark) {
+      final parts = bookmark.split('_');
+      if (parts.length >= 2) {
+        final indicatorCode = parts[0];
+        final countryCode = parts.sublist(1).join('_');
+        return BookmarkItem(
+          indicatorCode: indicatorCode,
+          countryCode: countryCode,
+          bookmarkKey: bookmark,
+        );
+      }
+      return BookmarkItem(
+        indicatorCode: bookmark,
+        countryCode: '',
+        bookmarkKey: bookmark,
+      );
+    }).toList();
+  }
+}
+
+/// 북마크 아이템 클래스
+class BookmarkItem {
+  final String indicatorCode;
+  final String countryCode;
+  final String bookmarkKey;
+
+  const BookmarkItem({
+    required this.indicatorCode,
+    required this.countryCode,
+    required this.bookmarkKey,
+  });
 }
 
 /// 지표 비교 뷰모델
