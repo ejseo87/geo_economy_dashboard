@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen>
     _scaleController.forward();
     _fadeController.forward();
 
-    // 3초 후 메인 화면으로 이동
+    // 3초 후 메인 네비게이션 화면으로 이동
     await Future.delayed(const Duration(milliseconds: 3000));
     if (mounted) {
       context.go('/');

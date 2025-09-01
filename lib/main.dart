@@ -27,7 +27,6 @@ void main() async {
     // Firebase 초기화 실패 시에도 앱은 계속 실행
   }
 
-
   // 기존 오프라인 캐시 서비스 초기화
   try {
     await OfflineCacheService.instance.initialize();
@@ -141,7 +140,9 @@ class GeoEconomyDashboardApp extends ConsumerWidget {
           actionsIconTheme: IconThemeData(color: Color(0xFFECE6C2)),
           iconTheme: IconThemeData(color: Color(0xFFECE6C2)),
         ),
-        bottomAppBarTheme: const BottomAppBarThemeData(color: Color(0xFF212121)),
+        bottomAppBarTheme: const BottomAppBarThemeData(
+          color: Color(0xFF212121),
+        ),
         primaryColor: const Color(0xFFFEA6F6),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: Color(0xFFFEA6F6),

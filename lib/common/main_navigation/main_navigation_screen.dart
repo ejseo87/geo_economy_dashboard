@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../constants/colors.dart';
 import '../../constants/sizes.dart';
 import '../../features/home/views/home_screen.dart';
 import '../../features/settings/views/settings_screen.dart';
 import '../../features/settings/view_models/settings_view_model.dart';
 import '../../features/search/views/search_screen.dart';
+import '../../features/favorites/views/favorites_screen.dart';
 import '../widgets/app_bar_widget.dart';
 import 'widgets/nav_tab.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   static const String routeName = "mainNavigation";
   static const String routeURL = "/";
+  
+  final StatefulNavigationShell navigationShell;
 
-  const MainNavigationScreen({super.key});
+  const MainNavigationScreen({super.key, required this.navigationShell});
 
   @override
   ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
-  int _selectedIndex = 0;
-
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    widget.navigationShell.goBranch(index);
   }
 
   @override
@@ -34,15 +34,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final isDark = ref.watch(settingsProvider).darkmode;
     
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: const [
-          HomeScreen(),
-          SearchScreen(),
-          FavoritesScreen(),
-          SettingsScreen(),
-        ],
-      ),
+      body: widget.navigationShell,
       bottomNavigationBar: _buildBottomNavigationBar(isDark),
     );
   }
@@ -78,28 +70,28 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 icon: FontAwesomeIcons.house,
                 selectedIcon: FontAwesomeIcons.house,
                 text: '홈',
-                isSelected: _selectedIndex == 0,
+                isSelected: widget.navigationShell.currentIndex == 0,
                 onTap: () => _onItemTapped(0),
               ),
               NavTab(
                 icon: FontAwesomeIcons.magnifyingGlass,
                 selectedIcon: FontAwesomeIcons.magnifyingGlass,
                 text: '검색',
-                isSelected: _selectedIndex == 1,
+                isSelected: widget.navigationShell.currentIndex == 1,
                 onTap: () => _onItemTapped(1),
               ),
               NavTab(
                 icon: FontAwesomeIcons.bookmark,
                 selectedIcon: FontAwesomeIcons.solidBookmark,
                 text: '즐겨찾기',
-                isSelected: _selectedIndex == 2,
+                isSelected: widget.navigationShell.currentIndex == 2,
                 onTap: () => _onItemTapped(2),
               ),
               NavTab(
                 icon: FontAwesomeIcons.gear,
                 selectedIcon: FontAwesomeIcons.gear,
                 text: '설정',
-                isSelected: _selectedIndex == 3,
+                isSelected: widget.navigationShell.currentIndex == 3,
                 onTap: () => _onItemTapped(3),
               ),
             ],
@@ -111,37 +103,3 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 }
 
 
-/// 임시 즐겨찾기 화면
-class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: AppBarWidget(
-        title: '즐겨찾기',
-        showGlobe: false,
-      ),
-      body: Center(
-        child:  Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FaIcon(
-              FontAwesomeIcons.solidBookmark,
-              size: 64,
-              color: AppColors.textSecondary,
-            ),
-            SizedBox(height: Sizes.size16),
-            Text(
-              '즐겨찾기 기능 구현 예정',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
@@ -35,9 +36,13 @@ class CountryDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(Sizes.size16),
               child: Column(
                 children: [
-                  CountryOverviewCard(country: country),
+                  _build10YearLineChart(),
                   const SizedBox(height: Sizes.size16),
-                  CountryIndicatorsSection(country: country),
+                  _buildOECDComparisonChart(),
+                  const SizedBox(height: Sizes.size16),
+                  _buildIndicatorButtonsGrid(context),
+                  const SizedBox(height: Sizes.size16),
+                  CountryOverviewCard(country: country),
                 ],
               ),
             ),

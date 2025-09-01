@@ -4,6 +4,8 @@ import 'package:geo_economy_dashboard/features/home/views/home_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import 'package:geo_economy_dashboard/features/users/views/user_profile_screen.dart';
 import 'package:geo_economy_dashboard/features/indicators/views/indicator_detail_screen.dart';
+import 'package:geo_economy_dashboard/features/search/views/search_screen.dart';
+import 'package:geo_economy_dashboard/features/favorites/views/favorites_screen.dart';
 import 'package:geo_economy_dashboard/common/countries/views/country_detail_screen.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 import 'package:geo_economy_dashboard/common/countries/models/country.dart';
@@ -30,10 +32,102 @@ GoRouter router(RouterRef ref) {
         name: SplashScreen.routeName,
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: MainNavigationScreen.routeURL,
-        name: MainNavigationScreen.routeName,
-        builder: (context, state) => const MainNavigationScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainNavigationScreen(navigationShell: navigationShell);
+        },
+        branches: [
+          // Home Branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                name: 'home',
+                builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'indicator/:indicatorCode/:countryCode',
+                    name: RouteName.indicatorDetail,
+                    builder: (context, state) {
+                      final indicatorCodeStr = state.pathParameters['indicatorCode']!;
+                      final countryCode = state.pathParameters['countryCode']!;
+                      
+                      // IndicatorCode enum 찾기
+                      final indicatorCode = IndicatorCode.values.firstWhere(
+                        (code) => code.code == indicatorCodeStr,
+                        orElse: () => IndicatorCode.gdpRealGrowth, // 기본값
+                      );
+                      
+                      // Country 객체 찾기
+                      final country = OECDCountries.findByCode(countryCode) ?? 
+                          Country(
+                            code: countryCode,
+                            name: countryCode,
+                            nameKo: _getCountryName(countryCode),
+                            flagEmoji: '',
+                            region: 'OECD',
+                          );
+                      
+                      return IndicatorDetailScreen(
+                        indicatorCode: indicatorCode,
+                        country: country,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'country/:countryCode',
+                    name: CountryDetailScreen.routeName,
+                    builder: (context, state) {
+                      final countryCode = state.pathParameters['countryCode']!;
+                      
+                      // Country 객체 찾기
+                      final country = OECDCountries.findByCode(countryCode) ?? 
+                          Country(
+                            code: countryCode,
+                            name: countryCode,
+                            nameKo: _getCountryName(countryCode),
+                            flagEmoji: '',
+                            region: 'OECD',
+                          );
+                      
+                      return CountryDetailScreen(country: country);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Search Branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/search',
+                name: 'search',
+                builder: (context, state) => const SearchScreen(),
+              ),
+            ],
+          ),
+          // Favorites Branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/favorites',
+                name: 'favorites',
+                builder: (context, state) => const FavoritesScreen(),
+              ),
+            ],
+          ),
+          // Settings Branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                name: 'settings',
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: SignUpScreen.routeURL,
@@ -46,70 +140,12 @@ GoRouter router(RouterRef ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: RouteURL.home,
-        name: RouteName.home,
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
         path: "/profile/:username",
         name: UserProfileScreen.routeName,
         builder: (context, state) {
           final username = state.pathParameters['username']!;
           final tab = state.uri.queryParameters['tab'] ?? "";
           return UserProfileScreen(username: username, tab: tab);
-        },
-      ),
-      GoRoute(
-        path: RouteURL.settings,
-        name: RouteName.settings,
-        builder: (context, state) => const SettingsScreen(),
-      ),
-      GoRoute(
-        path: RouteURL.indicatorDetail,
-        name: RouteName.indicatorDetail,
-        builder: (context, state) {
-          final indicatorCodeStr = state.pathParameters['indicatorCode']!;
-          final countryCode = state.pathParameters['countryCode']!;
-          
-          // IndicatorCode enum 찾기
-          final indicatorCode = IndicatorCode.values.firstWhere(
-            (code) => code.code == indicatorCodeStr,
-            orElse: () => IndicatorCode.gdpRealGrowth, // 기본값
-          );
-          
-          // Country 객체 찾기
-          final country = OECDCountries.findByCode(countryCode) ?? 
-              Country(
-                code: countryCode,
-                name: countryCode,
-                nameKo: _getCountryName(countryCode),
-                flagEmoji: '',
-                region: 'OECD',
-              );
-          
-          return IndicatorDetailScreen(
-            indicatorCode: indicatorCode,
-            country: country,
-          );
-        },
-      ),
-      GoRoute(
-        path: CountryDetailScreen.routeURL,
-        name: CountryDetailScreen.routeName,
-        builder: (context, state) {
-          final countryCode = state.pathParameters['countryCode']!;
-          
-          // Country 객체 찾기
-          final country = OECDCountries.findByCode(countryCode) ?? 
-              Country(
-                code: countryCode,
-                name: countryCode,
-                nameKo: _getCountryName(countryCode),
-                flagEmoji: '',
-                region: 'OECD',
-              );
-          
-          return CountryDetailScreen(country: country);
         },
       ),
     ],

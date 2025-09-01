@@ -72,6 +72,120 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
     context.pop();
   }
 
+  void _onSocialLogin(String provider) {
+    // TODO: SNS 로그인 구현
+    showInfoSnackBar(title: "$provider 로그인 준비중...", context: context);
+  }
+
+  Widget _buildSocialLoginButtons() {
+    return FractionallySizedBox(
+      widthFactor: 0.8,
+      child: Column(
+        children: [
+          // Google 로그인
+          _buildSocialLoginButton(
+            icon: FontAwesomeIcons.google,
+            label: 'Google로 로그인',
+            backgroundColor: Colors.white,
+            textColor: AppColors.textPrimary,
+            borderColor: AppColors.textSecondary,
+            onTap: () => _onSocialLogin('Google'),
+          ),
+          Gaps.v12,
+          // Apple 로그인
+          _buildSocialLoginButton(
+            icon: FontAwesomeIcons.apple,
+            label: 'Apple로 로그인',
+            backgroundColor: Colors.black,
+            textColor: Colors.white,
+            onTap: () => _onSocialLogin('Apple'),
+          ),
+          Gaps.v12,
+          // 카카오 로그인
+          _buildSocialLoginButton(
+            icon: FontAwesomeIcons.commentDots,
+            label: '카카오로 로그인',
+            backgroundColor: const Color(0xFFFEE500),
+            textColor: Colors.black87,
+            onTap: () => _onSocialLogin('Kakao'),
+          ),
+          Gaps.v12,
+          // GitHub 로그인
+          _buildSocialLoginButton(
+            icon: FontAwesomeIcons.github,
+            label: 'GitHub로 로그인',
+            backgroundColor: const Color(0xFF24292e),
+            textColor: Colors.white,
+            onTap: () => _onSocialLogin('GitHub'),
+          ),
+          Gaps.v24,
+          // 게스트 모드 링크
+          GestureDetector(
+            onTap: () {
+              context.go('/');
+            },
+            child: Text(
+              '게스트로 둘러보기',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialLoginButton({
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    Color? borderColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: borderColor != null
+              ? Border.all(color: borderColor, width: 1)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FaIcon(
+              icon,
+              size: 18,
+              color: textColor,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: AppTypography.bodyMedium.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(settingsProvider).darkmode;
@@ -252,6 +366,36 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () => _onSubmitted(context),
                       ),
                     ),
+                    Gaps.v32,
+                    // SNS 로그인 구분선
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Divider(
+                            color: AppColors.textSecondary,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            '또는 SNS로 로그인',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const Expanded(
+                          child: Divider(
+                            color: AppColors.textSecondary,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Gaps.v24,
+                    // SNS 로그인 버튼들
+                    _buildSocialLoginButtons(),
                   ],
                 ),
               ),
