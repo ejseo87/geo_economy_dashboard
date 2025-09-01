@@ -13,6 +13,8 @@ import '../widgets/historical_line_chart.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../../../common/countries/models/country.dart';
 import '../../home/models/sparkline_data.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// 지표 상세 화면
 class IndicatorDetailScreen extends ConsumerWidget {
@@ -156,6 +158,8 @@ class IndicatorDetailScreen extends ConsumerWidget {
           _buildTrendAnalysis(detail.trendAnalysis),
           Gaps.v16,
           _buildOECDComparison(detail.oecdStats),
+          Gaps.v16,
+          _buildCountryRankingChart(detail),
           Gaps.v16,
           _buildMetadataSection(detail.metadata),
           Gaps.v16,
@@ -602,6 +606,225 @@ class IndicatorDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildCountryRankingChart(IndicatorDetail detail) {
+    // Generate mock ranking data for top 15 OECD countries
+    final rankingData = _generateRankingData(detail);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.rankingStar,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              Gaps.h8,
+              Text(
+                '국가별 순위 (상위 15개국)',
+                style: AppTypography.heading3.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          Gaps.v16,
+          SizedBox(
+            height: 400,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: rankingData.isNotEmpty ? rankingData.map((e) => e['value'] as double).reduce(math.max) * 1.1 : 100,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final country = rankingData[groupIndex];
+                      return BarTooltipItem(
+                        '${country['name']}\n${country['value'].toStringAsFixed(1)}${detail.metadata.unit}',
+                        AppTypography.bodySmall.copyWith(color: Colors.white),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        if (value.toInt() >= 0 && value.toInt() < rankingData.length) {
+                          final country = rankingData[value.toInt()];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              country['flag'] as String,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: false,
+                ),
+                barGroups: rankingData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final country = entry.value;
+                  final isCurrentCountry = country['code'] == detail.countryCode;
+                  
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: country['value'] as double,
+                        color: isCurrentCountry 
+                            ? AppColors.accent 
+                            : AppColors.primary.withValues(alpha: 0.7),
+                        width: 16,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  );
+                }).toList(),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: rankingData.isNotEmpty 
+                      ? (rankingData.map((e) => e['value'] as double).reduce(math.max) / 5)
+                      : 20,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.textSecondary.withValues(alpha: 0.1),
+                    strokeWidth: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Gaps.v12,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                Gaps.h8,
+                Text(
+                  '${country.nameKo}의 현재 순위: ${detail.currentRank}위',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _generateRankingData(IndicatorDetail detail) {
+    // Mock OECD countries for ranking display
+    final oecdCountries = [
+      {'code': 'LUX', 'name': '룩셈부르크', 'flag': '🇱🇺'},
+      {'code': 'NOR', 'name': '노르웨이', 'flag': '🇳🇴'},
+      {'code': 'CHE', 'name': '스위스', 'flag': '🇨🇭'},
+      {'code': 'USA', 'name': '미국', 'flag': '🇺🇸'},
+      {'code': 'IRL', 'name': '아일랜드', 'flag': '🇮🇪'},
+      {'code': 'DNK', 'name': '덴마크', 'flag': '🇩🇰'},
+      {'code': 'NLD', 'name': '네덜란드', 'flag': '🇳🇱'},
+      {'code': 'SWE', 'name': '스웨덴', 'flag': '🇸🇪'},
+      {'code': 'AUT', 'name': '오스트리아', 'flag': '🇦🇹'},
+      {'code': 'DEU', 'name': '독일', 'flag': '🇩🇪'},
+      {'code': 'BEL', 'name': '벨기에', 'flag': '🇧🇪'},
+      {'code': 'FIN', 'name': '핀란드', 'flag': '🇫🇮'},
+      {'code': 'CAN', 'name': '캐나다', 'flag': '🇨🇦'},
+      {'code': 'FRA', 'name': '프랑스', 'flag': '🇫🇷'},
+      {'code': 'KOR', 'name': '한국', 'flag': '🇰🇷'},
+    ];
+
+    // Generate ranking data with the current country included
+    final rankingData = <Map<String, dynamic>>[];
+    final currentValue = detail.currentValue ?? 50.0;
+    
+    for (int i = 0; i < oecdCountries.length; i++) {
+      final countryData = oecdCountries[i];
+      double value;
+      
+      if (countryData['code'] == detail.countryCode) {
+        value = currentValue;
+      } else {
+        // Generate realistic values around the current value
+        final baseValue = currentValue * (1.2 - (i * 0.05));
+        final variance = currentValue * 0.1 * (math.Random().nextDouble() - 0.5);
+        value = math.max(0, baseValue + variance);
+      }
+      
+      rankingData.add({
+        'code': countryData['code'],
+        'name': countryData['name'],
+        'flag': countryData['flag'],
+        'value': value,
+        'rank': i + 1,
+      });
+    }
+    
+    // Sort by value in descending order to show actual ranking
+    rankingData.sort((a, b) => (b['value'] as double).compareTo(a['value'] as double));
+    
+    // Update ranks after sorting
+    for (int i = 0; i < rankingData.length; i++) {
+      rankingData[i]['rank'] = i + 1;
+    }
+    
+    return rankingData.take(15).toList();
   }
 
   Widget _buildStatBox(String label, String value) {
@@ -1080,7 +1303,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
                   children: [
                     FaIcon(FontAwesomeIcons.arrowUpRightFromSquare, size: 14),
                     SizedBox(width: 4),
-                    Text('방문'),
+                    Text('World Bank 방문'),
                   ],
                 ),
               ),
@@ -1286,7 +1509,10 @@ class IndicatorDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _launchURL(String url) {
-    // URL 실행 기능 구현 (추후)
+  void _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

@@ -16,13 +16,10 @@ import '../../../features/worldbank/models/indicator_codes.dart';
 class CountryDetailScreen extends ConsumerWidget {
   static const String routeName = 'countryDetail';
   static const String routeURL = '/country/:countryCode';
-  
+
   final Country country;
-  
-  const CountryDetailScreen({
-    super.key,
-    required this.country,
-  });
+
+  const CountryDetailScreen({super.key, required this.country});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,10 +94,7 @@ class CountryDetailScreen extends ConsumerWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppColors.primary,
-                Color(0xFF003D7A),
-              ],
+              colors: [AppColors.primary, Color(0xFF003D7A)],
             ),
           ),
           child: Center(
@@ -256,12 +250,12 @@ class CountryDetailScreen extends ConsumerWidget {
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, barData, index) =>
-                          FlDotCirclePainter(
-                            radius: 4,
-                            color: AppColors.primary,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          ),
+                            FlDotCirclePainter(
+                              radius: 4,
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                              strokeColor: Colors.white,
+                            ),
                       ),
                       belowBarData: BarAreaData(
                         show: true,
@@ -313,7 +307,8 @@ class CountryDetailScreen extends ConsumerWidget {
                   maxY: 15,
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => AppColors.textPrimary.withValues(alpha: 0.8),
+                      getTooltipColor: (_) =>
+                          AppColors.textPrimary.withValues(alpha: 0.8),
                       tooltipRoundedRadius: 8,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final String indicator = _getIndicatorName(groupIndex);
@@ -402,12 +397,36 @@ class CountryDetailScreen extends ConsumerWidget {
   // 기타 지표 버튼 그리드
   Widget _buildIndicatorButtonsGrid(BuildContext context) {
     final indicators = [
-      {'code': IndicatorCode.gdpRealGrowth, 'icon': FontAwesomeIcons.chartLine, 'color': AppColors.primary},
-      {'code': IndicatorCode.unemployment, 'icon': FontAwesomeIcons.users, 'color': AppColors.accent},
-      {'code': IndicatorCode.cpiInflation, 'icon': FontAwesomeIcons.dollarSign, 'color': AppColors.warning},
-      {'code': IndicatorCode.currentAccount, 'icon': FontAwesomeIcons.globe, 'color': AppColors.primaryVariant},
-      {'code': IndicatorCode.gdpPppPerCapita, 'icon': FontAwesomeIcons.chartColumn, 'color': AppColors.accentVariant},
-      {'code': IndicatorCode.employmentRate, 'icon': FontAwesomeIcons.briefcase, 'color': AppColors.textSecondary},
+      {
+        'code': IndicatorCode.gdpRealGrowth,
+        'icon': FontAwesomeIcons.chartLine,
+        'color': AppColors.primary,
+      },
+      {
+        'code': IndicatorCode.unemployment,
+        'icon': FontAwesomeIcons.users,
+        'color': AppColors.accent,
+      },
+      {
+        'code': IndicatorCode.cpiInflation,
+        'icon': FontAwesomeIcons.dollarSign,
+        'color': AppColors.warning,
+      },
+      {
+        'code': IndicatorCode.currentAccount,
+        'icon': FontAwesomeIcons.globe,
+        'color': AppColors.primaryVariant,
+      },
+      {
+        'code': IndicatorCode.gdpPppPerCapita,
+        'icon': FontAwesomeIcons.chartColumn,
+        'color': AppColors.accentVariant,
+      },
+      {
+        'code': IndicatorCode.employmentRate,
+        'icon': FontAwesomeIcons.briefcase,
+        'color': AppColors.textSecondary,
+      },
     ];
 
     return Card(
@@ -434,7 +453,7 @@ class CountryDetailScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: Sizes.size16),
+            const SizedBox(height: Sizes.size4),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -450,36 +469,32 @@ class CountryDetailScreen extends ConsumerWidget {
                 final indicatorCode = indicator['code'] as IndicatorCode;
                 final icon = indicator['icon'] as IconData;
                 final color = indicator['color'] as Color;
-                
+
                 return InkWell(
                   onTap: () {
-                    context.push('/indicator/${indicatorCode.code}/${country.code}');
+                    context.push(
+                      '/indicator/${indicatorCode.code}/${country.code}',
+                    );
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.outline,
-                        width: 1,
-                      ),
+                      border: Border.all(color: AppColors.outline, width: 1),
                       borderRadius: BorderRadius.circular(8),
                       color: color.withValues(alpha: 0.05),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: FaIcon(
-                            icon,
-                            size: 14,
-                            color: color,
-                          ),
+                          child: FaIcon(icon, size: 14, color: color),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -527,16 +542,16 @@ class CountryDetailScreen extends ConsumerWidget {
   List<FlSpot> _getMockGdpData() {
     // 한국의 GDP 성장률 샘플 데이터 (2014-2023)
     return [
-      const FlSpot(0, 3.2),  // 2014
-      const FlSpot(1, 2.8),  // 2015
-      const FlSpot(2, 2.9),  // 2016
-      const FlSpot(3, 3.2),  // 2017
-      const FlSpot(4, 2.7),  // 2018
-      const FlSpot(5, 2.0),  // 2019
+      const FlSpot(0, 3.2), // 2014
+      const FlSpot(1, 2.8), // 2015
+      const FlSpot(2, 2.9), // 2016
+      const FlSpot(3, 3.2), // 2017
+      const FlSpot(4, 2.7), // 2018
+      const FlSpot(5, 2.0), // 2019
       const FlSpot(6, -0.7), // 2020
-      const FlSpot(7, 4.3),  // 2021
-      const FlSpot(8, 3.1),  // 2022
-      const FlSpot(9, 3.1),  // 2023
+      const FlSpot(7, 4.3), // 2021
+      const FlSpot(8, 3.1), // 2022
+      const FlSpot(9, 3.1), // 2023
     ];
   }
 
