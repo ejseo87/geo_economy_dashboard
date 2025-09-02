@@ -4,12 +4,12 @@
 - Name: Geo Economy Dashboard
 - Data Source: World Bank API (https://api.worldbank.org/v2)
 - Backend: Firebase (Auth, Firestore, Storage)
-- Local Cache: sqllite Database (iOS/Android)
+- Local Cache: sqllite Database 
 - State Management: Riverpod
 - Purpose: Compare Korea’s economic indicators with OECD 38 countries, provide instant insight and shareable charts.
 
 ## 2. Core Features
-1. Data collection from World Bank API, stored in Firebase Firestore.
+1. Data collection from World Bank API, stored in Firebase Firestore. When a user access country data 
 2. Admin user with privileges:
    - Collect latest data from World Bank API
    - Audit Firestore for duplicates
@@ -36,7 +36,7 @@
 - **Usability**:
   - Swipe/tab gestures, long-press for favorites, tooltips with indicator definitions
 - **Feedback**:
-  - Loading spinners, offline mode, friendly error messages
+  - Loading spinners, friendly error messages
 - **Sharing**:
   - Export cards/charts as PNG/JPEG, share links, save bookmarks
 - **UI Style Guide**:

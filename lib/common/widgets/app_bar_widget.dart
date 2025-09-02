@@ -1,11 +1,11 @@
 import 'package:geo_economy_dashboard/constants/colors.dart';
+import 'package:geo_economy_dashboard/constants/gaps.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/common/countries/widgets/country_selection_bottom_sheet.dart';
 import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
 import 'package:geo_economy_dashboard/features/notifications/widgets/notification_button.dart';
-import 'package:geo_economy_dashboard/common/widgets/offline_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -49,7 +49,8 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
 
     return AppBar(
       backgroundColor: surfaceColor,
-      elevation: 0,
+      elevation: 2,
+     
       leading: showGlobe
           ? GestureDetector(
               onTap: () => _onGlobeTap(context, ref),
@@ -60,7 +61,7 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
                   children: [
                     Text(
                       selectedCountry.flagEmoji,
-                      style: const TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 24),
                     ),
                     const SizedBox(width: 4),
                     FaIcon(
@@ -75,28 +76,33 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
           : null,
       title: Column(
         children: [
+          showGlobe
+              ? Text(
+                  selectedCountry.nameKo,
+                  style: AppTypography.heading2.copyWith(
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              : Text(
+                  title ?? '국제지표 현황',
+                  style: AppTypography.heading2.copyWith(
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+          Gaps.v4,
           Text(
-            title ?? 'Geo Economy Dashboard',
-            style: AppTypography.heading4.copyWith(
-              color: isDark ? Colors.white : AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+            'OECD 38개국과 비교',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
-          if (showGlobe)
-            Text(
-              selectedCountry.nameKo,
-              style: AppTypography.caption.copyWith(
-                color: isDark ? Colors.white70 : AppColors.textSecondary,
-              ),
-            ),
         ],
       ),
+
       centerTitle: true,
       actions: [
-        const Padding(
-          padding: EdgeInsets.only(right: 8),
-          child: Center(child: ConnectionStatusWidget()),
-        ),
         if (showNotification) const NotificationButton(),
         if (showGear)
           IconButton(

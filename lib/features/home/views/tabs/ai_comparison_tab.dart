@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/colors.dart';
 import '../../../../constants/typography.dart';
-import '../../../../common/countries/view_models/selected_country_provider.dart';
 import '../../widgets/recommended_comparison_card.dart';
 
 /// 두번째 탭: 1분 규칙 - AI 추천 비교 (1-2개 지표)

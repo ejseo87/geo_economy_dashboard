@@ -804,7 +804,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      horizontalInterval: rankingData.map((e) => e['value'] as double).reduce(math.max) / 5,
+                      horizontalInterval: math.max(1.0, rankingData.map((e) => e['value'] as double).reduce(math.max) / 5),
                       getDrawingHorizontalLine: (value) => FlLine(
                         color: AppColors.textSecondary.withValues(alpha: 0.1),
                         strokeWidth: 1,

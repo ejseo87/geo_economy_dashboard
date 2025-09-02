@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
-import 'package:geo_economy_dashboard/constants/typography.dart';
-import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import '../../../common/widgets/app_bar_widget.dart';
 import '../models/tab_state.dart';
@@ -36,54 +33,6 @@ class HomeScreen extends ConsumerWidget {
         appBar: const AppBarWidget(),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverToBoxAdapter(
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final selectedCountry = ref.watch(selectedCountryProvider);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 16,
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        context.push('/country/${selectedCountry.code}');
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        child: Row(
-                          children: [
-                            Text(
-                              selectedCountry.flagEmoji,
-                              style: const TextStyle(fontSize: 32),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selectedCountry.nameKo,
-                                    style: AppTypography.heading2,
-                                  ),
-                                  Text(
-                                    'OECD 38개국 중 현재 순위',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
             SliverPersistentHeader(
               delegate: PersistentTabBar(
                 tabs: HomeTab.values

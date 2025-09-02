@@ -1,12 +1,9 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
-import 'package:geo_economy_dashboard/common/services/offline_cache_service.dart';
-import 'package:geo_economy_dashboard/common/services/network_service.dart';
 import 'package:geo_economy_dashboard/common/countries/services/countries_service.dart';
 import 'package:geo_economy_dashboard/features/favorites/services/favorites_service.dart';
 import 'package:geo_economy_dashboard/features/notifications/services/notification_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/services/accessibility_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/view_models/accessibility_view_model.dart';
-import 'package:geo_economy_dashboard/common/widgets/offline_banner.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/settings/repos/settings_repo.dart';
@@ -30,21 +27,6 @@ void main() async {
     // Firebase 초기화 실패 시에도 앱은 계속 실행
   }
 
-  // 기존 오프라인 캐시 서비스 초기화
-  try {
-    await OfflineCacheService.instance.initialize();
-    AppLogger.info('Offline cache service initialized');
-  } catch (e) {
-    AppLogger.error('Failed to initialize offline cache service: $e');
-  }
-
-  // 네트워크 서비스 초기화
-  try {
-    await NetworkService.instance.initialize();
-    AppLogger.info('Network service initialized');
-  } catch (e) {
-    AppLogger.error('Failed to initialize network service: $e');
-  }
 
   // 즐겨찾기 서비스 초기화
   try {
@@ -110,7 +92,7 @@ class GeoEconomyDashboardApp extends ConsumerWidget {
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(accessibilitySettings.fontScale),
           ),
-          child: OfflineIndicator(child: child!),
+          child: child!,
         );
       },
       theme: ThemeData(

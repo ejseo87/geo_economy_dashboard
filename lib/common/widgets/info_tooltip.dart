@@ -61,7 +61,6 @@ class InfoTooltip extends StatelessWidget {
       );
 
     return Tooltip(
-      message: '',  // Empty because we use richMessage
       richMessage: WidgetSpan(child: tooltipContent),
       triggerMode: triggerMode,
       waitDuration: waitDuration,
