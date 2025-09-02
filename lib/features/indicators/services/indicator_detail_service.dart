@@ -6,6 +6,7 @@ import '../models/indicator_metadata.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../../worldbank/repositories/indicator_repository.dart';
 import '../../../common/countries/models/country.dart';
+import '../../../common/countries/services/countries_service.dart';
 import '../../home/models/indicator_comparison.dart';
 
 /// 지표 상세 정보 서비스 (오프라인 캐시 지원)
@@ -296,6 +297,166 @@ class IndicatorDetailService {
     } catch (error) {
       AppLogger.error('[IndicatorDetailService] Error calculating ranking: $error');
       return (null, 0);
+    }
+  }
+
+  /// 실제 OECD 순위 데이터 가져오기
+  Future<List<Map<String, dynamic>>> getRealRankingData({
+    required IndicatorCode indicatorCode,
+    required Country currentCountry,
+    int maxCountries = 15,
+  }) async {
+    try {
+      AppLogger.debug('[IndicatorDetailService] Loading real ranking data for ${indicatorCode.name}');
+      
+      // 최근 3년간 데이터가 있는 연도 찾기
+      final currentYear = DateTime.now().year;
+      final candidateYears = [currentYear - 1, currentYear - 2, currentYear - 3];
+      
+      OECDStatistics? oecdStats;
+      int? usedYear;
+      
+      for (final year in candidateYears) {
+        try {
+          oecdStats = await _repository.getOECDStatistics(
+            indicatorCode: indicatorCode,
+            year: year,
+          );
+          if (oecdStats.totalCountries > 0 && 
+              oecdStats.countryRankings != null && 
+              oecdStats.countryRankings!.isNotEmpty) {
+            usedYear = year;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (oecdStats?.countryRankings == null || usedYear == null) {
+        AppLogger.warning('[IndicatorDetailService] No ranking data available');
+        return await _getFallbackRankingData(indicatorCode, currentCountry);
+      }
+      
+      // 순위순으로 정렬하고 상위 maxCountries개 선택
+      final rankings = List<CountryRanking>.from(oecdStats!.countryRankings!)
+        ..sort((a, b) => a.rank.compareTo(b.rank));
+      
+      final rankingData = <Map<String, dynamic>>[];
+      int addedCount = 0;
+      bool currentCountryIncluded = false;
+      
+      // OECD 국가 정보 가져오기
+      final oecdCountries = CountriesService.instance.countries;
+      final countryMap = {for (var c in oecdCountries) c.code: c};
+      
+      // 상위 순위부터 추가
+      for (final ranking in rankings) {
+        if (addedCount >= maxCountries && currentCountryIncluded) break;
+        
+        final country = countryMap[ranking.countryCode];
+        if (country != null) {
+          rankingData.add({
+            'rank': ranking.rank,
+            'country': country.nameKo,
+            'countryCode': ranking.countryCode,
+            'flag': country.flagEmoji,
+            'value': ranking.value,
+          });
+          
+          if (ranking.countryCode == currentCountry.code) {
+            currentCountryIncluded = true;
+          }
+          
+          addedCount++;
+        }
+      }
+      
+      // 현재 국가가 포함되지 않았고 순위가 있다면 추가
+      if (!currentCountryIncluded) {
+        final currentRanking = rankings.firstWhere(
+          (r) => r.countryCode == currentCountry.code,
+          orElse: () => CountryRanking(
+            countryCode: currentCountry.code,
+            countryName: currentCountry.nameKo,
+            rank: 0,
+            value: 0.0,
+          ),
+        );
+        
+        if (currentRanking.rank > 0) {
+          final country = countryMap[currentCountry.code];
+          if (country != null) {
+            // 현재 국가를 적절한 위치에 삽입
+            rankingData.add({
+              'rank': currentRanking.rank,
+              'country': country.nameKo,
+              'countryCode': currentCountry.code,
+              'flag': country.flagEmoji,
+              'value': currentRanking.value,
+            });
+          }
+        }
+      }
+      
+      // 순위순으로 최종 정렬
+      rankingData.sort((a, b) => (a['rank'] as int).compareTo(b['rank'] as int));
+      
+      AppLogger.info('[IndicatorDetailService] Generated ${rankingData.length} real ranking entries');
+      return rankingData;
+      
+    } catch (error) {
+      AppLogger.error('[IndicatorDetailService] Error loading real ranking data: $error');
+      return await _getFallbackRankingData(indicatorCode, currentCountry);
+    }
+  }
+  
+  /// Fallback 순위 데이터 생성 (실제 데이터가 없을 때)
+  Future<List<Map<String, dynamic>>> _getFallbackRankingData(IndicatorCode indicatorCode, Country currentCountry) async {
+    AppLogger.warning('[IndicatorDetailService] Using fallback ranking data');
+    
+    try {
+      // OECD 국가 목록에서 상위 10개국과 현재 국가 선택
+      final oecdCountries = CountriesService.instance.countries;
+      
+      // 주요 경제대국들을 우선 선택
+      final priorityCountries = ['USA', 'DEU', 'JPN', 'GBR', 'FRA', 'ITA', 'CAN', 'AUS', 'ESP', 'NLD'];
+      final selectedCountries = <Country>[];
+      
+      // 우선순위 국가들 추가
+      for (final code in priorityCountries) {
+        final country = oecdCountries.firstWhere(
+          (c) => c.code == code,
+          orElse: () => Country(code: code, name: code, nameKo: code, flagEmoji: '🏳️', region: 'OECD'),
+        );
+        selectedCountries.add(country);
+      }
+      
+      // 현재 국가가 목록에 없다면 추가
+      if (!selectedCountries.any((c) => c.code == currentCountry.code)) {
+        selectedCountries.add(currentCountry);
+      }
+      
+      return selectedCountries.asMap().entries.map((entry) {
+        return {
+          'rank': entry.key + 1,
+          'country': entry.value.nameKo,
+          'countryCode': entry.value.code,
+          'flag': entry.value.flagEmoji,
+          'value': 0.0, // 실제 값이 없으므로 0
+        };
+      }).toList();
+      
+    } catch (error) {
+      AppLogger.error('[IndicatorDetailService] Error creating fallback data: $error');
+      
+      // 최후의 수단: 하드코딩된 기본 데이터
+      return [
+        {'rank': 1, 'country': '미국', 'countryCode': 'USA', 'flag': '🇺🇸', 'value': 0.0},
+        {'rank': 2, 'country': '독일', 'countryCode': 'DEU', 'flag': '🇩🇪', 'value': 0.0},
+        {'rank': 3, 'country': '일본', 'countryCode': 'JPN', 'flag': '🇯🇵', 'value': 0.0},
+        {'rank': 4, 'country': currentCountry.nameKo, 'countryCode': currentCountry.code, 'flag': currentCountry.flagEmoji, 'value': 0.0},
+      ];
     }
   }
 

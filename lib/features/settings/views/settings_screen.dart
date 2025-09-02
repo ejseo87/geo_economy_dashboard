@@ -66,6 +66,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (value) => ref.read(settingsProvider.notifier).setDarkmode(value),
                 isDark: isDark,
               ),
+              _buildActionTile(
+                icon: FontAwesomeIcons.universalAccess,
+                title: '접근성',
+                subtitle: '폰트 크기, 색맹 대응, 대비 설정',
+                onTap: () => context.push('/settings/accessibility'),
+                isDark: isDark,
+              ),
             ],
           ),
           _buildSection(

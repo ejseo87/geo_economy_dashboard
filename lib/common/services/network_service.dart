@@ -19,6 +19,11 @@ class NetworkService {
     return _networkStatusController!.stream;
   }
 
+  // 연결 상태를 boolean으로 반환하는 스트림
+  Stream<bool> get connectionStream {
+    return networkStatusStream.map((status) => status == NetworkStatus.good || status == NetworkStatus.fair);
+  }
+
   NetworkStatus _currentStatus = NetworkStatus.unknown;
   NetworkStatus get currentStatus => _currentStatus;
 

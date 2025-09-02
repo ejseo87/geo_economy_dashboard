@@ -6,6 +6,7 @@ import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/gaps.dart';
 import '../../../common/widgets/app_bar_widget.dart';
+import '../../../common/widgets/gesture_wrapper.dart';
 import '../../indicators/view_models/indicator_detail_view_model.dart';
 import '../../worldbank/models/indicator_codes.dart';
 import '../models/favorite_item.dart';
@@ -45,7 +46,6 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bookmarkItems = ref.read(bookmarkViewModelProvider.notifier).getBookmarkItems();
     final favoriteItems = FavoritesService.instance.favorites;
     
     return Scaffold(
@@ -62,7 +62,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildBookmarksTab(bookmarkItems),
+                _buildBookmarksTab([]), // Empty list as we get items inside Consumer
                 _buildFavoritesTab(favoriteItems),
               ],
             ),
@@ -130,36 +130,44 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
   }
 
   Widget _buildBookmarksTab(List<BookmarkItem> bookmarkItems) {
-    if (bookmarkItems.isEmpty) {
-      return _buildEmptyState(
-        icon: FontAwesomeIcons.bookmark,
-        title: '저장된 북마크가 없습니다',
-        subtitle: '지표 상세 페이지에서 북마크를 추가해보세요',
-      );
-    }
+    return Consumer(
+      builder: (context, ref, child) {
+        // Watch the bookmark state to rebuild when bookmarks change
+        final bookmarks = ref.watch(bookmarkViewModelProvider);
+        final currentBookmarkItems = ref.read(bookmarkViewModelProvider.notifier).getBookmarkItems();
+        
+        if (currentBookmarkItems.isEmpty) {
+          return _buildEmptyState(
+            icon: FontAwesomeIcons.bookmark,
+            title: '저장된 북마크가 없습니다',
+            subtitle: '지표 상세 페이지에서 북마크를 추가해보세요',
+          );
+        }
 
-    final filteredItems = _searchQuery.isEmpty
-        ? bookmarkItems
-        : bookmarkItems
-            .where((item) =>
-                item.indicatorCode.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                item.countryCode.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
+        final filteredItems = _searchQuery.isEmpty
+            ? currentBookmarkItems
+            : currentBookmarkItems
+                .where((item) =>
+                    item.indicatorCode.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                    item.countryCode.toLowerCase().contains(_searchQuery.toLowerCase()))
+                .toList();
 
-    if (filteredItems.isEmpty) {
-      return _buildEmptyState(
-        icon: FontAwesomeIcons.magnifyingGlass,
-        title: '검색 결과가 없습니다',
-        subtitle: '다른 검색어를 시도해보세요',
-      );
-    }
+        if (filteredItems.isEmpty) {
+          return _buildEmptyState(
+            icon: FontAwesomeIcons.magnifyingGlass,
+            title: '검색 결과가 없습니다',
+            subtitle: '다른 검색어를 시도해보세요',
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredItems.length,
-      itemBuilder: (context, index) {
-        final item = filteredItems[index];
-        return _buildBookmarkCard(item);
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: filteredItems.length,
+          itemBuilder: (context, index) {
+            final item = filteredItems[index];
+            return _buildBookmarkCard(item);
+          },
+        );
       },
     );
   }
@@ -230,9 +238,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
   }
 
   Widget _buildBookmarkCard(BookmarkItem item) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
+    return GestureWrapper(
+      onTap: () => _navigateToIndicatorDetail(item),
+      onSwipeLeft: () => _showRemoveBookmarkConfirmation(item),
+      onLongPress: () => _showBookmarkOptions(item),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
         leading: Container(
           width: 48,
           height: 48,
@@ -260,15 +273,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
             color: AppColors.textSecondary,
           ),
         ),
-        trailing: IconButton(
-          icon: const FaIcon(
-            FontAwesomeIcons.solidBookmark,
-            color: AppColors.accent,
-            size: 16,
+          trailing: IconButton(
+            icon: const FaIcon(
+              FontAwesomeIcons.solidBookmark,
+              color: AppColors.accent,
+              size: 16,
+            ),
+            onPressed: () => _removeBookmark(item),
           ),
-          onPressed: () => _removeBookmark(item),
         ),
-        onTap: () => _navigateToIndicatorDetail(item),
       ),
     );
   }
@@ -379,64 +392,79 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Gaps.v16,
-            Text(
-              '즐겨찾기 추가',
-              style: AppTypography.heading3.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Gaps.v20,
-            _buildFavoriteOption(
-              icon: FontAwesomeIcons.flag,
-              title: '국가 요약',
-              subtitle: '현재 선택된 국가의 주요 지표를 저장',
-              onTap: () => _createCountrySummaryFavorite(),
-            ),
-            Gaps.v12,
-            _buildFavoriteOption(
-              icon: FontAwesomeIcons.chartBar,
-              title: '지표 비교',
-              subtitle: '선택된 지표의 국가별 비교를 저장',
-              onTap: () => _createIndicatorComparisonFavorite(),
-            ),
-            Gaps.v12,
-            _buildFavoriteOption(
-              icon: FontAwesomeIcons.userGear,
-              title: '사용자 정의',
-              subtitle: '나만의 분석 조합을 저장',
-              onTap: () => _createCustomFavorite(),
-            ),
-            Gaps.v20,
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  '취소',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+      builder: (context) => SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
+                  Gaps.v16,
+                  Text(
+                    '즐겨찾기 추가',
+                    style: AppTypography.heading3.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Gaps.v16,
+                  _buildFavoriteOption(
+                    icon: FontAwesomeIcons.flag,
+                    title: '국가 요약',
+                    subtitle: '현재 선택된 국가의 주요 지표를 저장',
+                    onTap: () => _createCountrySummaryFavorite(),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildFavoriteOption(
+                    icon: FontAwesomeIcons.chartBar,
+                    title: '지표 비교',
+                    subtitle: '선택된 지표의 국가별 비교를 저장',
+                    onTap: () => _createIndicatorComparisonFavorite(),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildFavoriteOption(
+                    icon: FontAwesomeIcons.userGear,
+                    title: '사용자 정의',
+                    subtitle: '나만의 분석 조합을 저장',
+                    onTap: () => _createCustomFavorite(),
+                  ),
+                  Gaps.v16,
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        '취소',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Add bottom padding for safe area
+                  SizedBox(height: MediaQuery.of(context).padding.bottom),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -620,6 +648,77 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('사용자 정의 즐겨찾기 생성 기능을 준비 중입니다...'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  // Gesture support methods
+  void _showRemoveBookmarkConfirmation(BookmarkItem item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('북마크 제거'),
+        content: const Text('이 북마크를 제거하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _removeBookmark(item);
+            },
+            child: const Text('제거'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBookmarkOptions(BookmarkItem item) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.eye),
+              title: const Text('보기'),
+              onTap: () {
+                Navigator.pop(context);
+                _navigateToIndicatorDetail(item);
+              },
+            ),
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.shareNodes),
+              title: const Text('공유'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareBookmark(item);
+              },
+            ),
+            ListTile(
+              leading: const FaIcon(FontAwesomeIcons.trash, color: AppColors.error),
+              title: const Text('제거', style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(context);
+                _showRemoveBookmarkConfirmation(item);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareBookmark(BookmarkItem item) {
+    // TODO: Implement bookmark sharing
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('북마크 공유 기능을 준비 중입니다...'),
         backgroundColor: AppColors.primary,
       ),
     );

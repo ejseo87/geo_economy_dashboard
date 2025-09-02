@@ -5,6 +5,7 @@ import 'package:geo_economy_dashboard/features/settings/view_models/settings_vie
 import 'package:geo_economy_dashboard/common/countries/widgets/country_selection_bottom_sheet.dart';
 import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
 import 'package:geo_economy_dashboard/features/notifications/widgets/notification_button.dart';
+import 'package:geo_economy_dashboard/common/widgets/offline_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -92,6 +93,10 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
       ),
       centerTitle: true,
       actions: [
+        const Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: Center(child: ConnectionStatusWidget()),
+        ),
         if (showNotification) const NotificationButton(),
         if (showGear)
           IconButton(

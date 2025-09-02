@@ -7,6 +7,7 @@ import 'package:geo_economy_dashboard/features/indicators/views/indicator_detail
 import 'package:geo_economy_dashboard/features/search/views/search_screen.dart';
 import 'package:geo_economy_dashboard/features/favorites/views/favorites_screen.dart';
 import 'package:geo_economy_dashboard/common/countries/views/country_detail_screen.dart';
+import 'package:geo_economy_dashboard/features/accessibility/views/accessibility_settings_screen.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 import 'package:geo_economy_dashboard/common/countries/models/country.dart';
 import 'package:geo_economy_dashboard/common/main_navigation/main_navigation_screen.dart';
@@ -124,6 +125,13 @@ GoRouter router(RouterRef ref) {
                 path: '/settings',
                 name: 'settings',
                 builder: (context, state) => const SettingsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'accessibility',
+                    name: 'accessibility',
+                    builder: (context, state) => const AccessibilitySettingsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

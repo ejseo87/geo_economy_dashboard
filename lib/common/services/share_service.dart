@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../logger.dart';
 import 'share_service_mobile.dart' if (dart.library.html) 'share_service_web.dart';
@@ -182,12 +183,20 @@ class ShareService {
   /// 클립보드에 텍스트 복사
   Future<bool> copyToClipboard(String text) async {
     try {
-      await Share.share(text);
-      AppLogger.info('[ShareService] Text shared/copied');
+      await Clipboard.setData(ClipboardData(text: text));
+      AppLogger.info('[ShareService] Text copied to clipboard successfully');
       return true;
     } catch (e) {
       AppLogger.error('[ShareService] Error copying to clipboard: $e');
-      return false;
+      // 클립보드 복사에 실패한 경우 공유로 대체
+      try {
+        await Share.share(text);
+        AppLogger.info('[ShareService] Fallback to share successful');
+        return true;
+      } catch (shareError) {
+        AppLogger.error('[ShareService] Fallback share also failed: $shareError');
+        return false;
+      }
     }
   }
 }

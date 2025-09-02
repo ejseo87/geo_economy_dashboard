@@ -75,8 +75,19 @@ class BookmarkViewModel extends _$BookmarkViewModel {
   
   @override
   Set<String> build() {
-    _loadBookmarks();
+    _loadBookmarksSync();
     return <String>{};
+  }
+
+  /// 동기적으로 북마크를 로드 (SharedPreferences 캐시 사용)
+  void _loadBookmarksSync() {
+    SharedPreferences.getInstance().then((prefs) {
+      final bookmarksList = prefs.getStringList(_bookmarksKey) ?? [];
+      state = Set<String>.from(bookmarksList);
+      AppLogger.debug('[BookmarkViewModel] Loaded ${bookmarksList.length} bookmarks');
+    }).catchError((e) {
+      AppLogger.error('[BookmarkViewModel] Error loading bookmarks: $e');
+    });
   }
 
   /// SharedPreferences에서 북마크 로드
