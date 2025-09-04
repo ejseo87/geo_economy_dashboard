@@ -67,6 +67,8 @@ dependencies:
   # SQLite for local caching  
   sqflite: ^2.4.1
   path: ^1.8.3
+  # Crypto for password hashing
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

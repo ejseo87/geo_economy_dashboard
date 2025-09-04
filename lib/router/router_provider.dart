@@ -8,6 +8,8 @@ import 'package:geo_economy_dashboard/features/search/views/search_screen.dart';
 import 'package:geo_economy_dashboard/features/favorites/views/favorites_screen.dart';
 import 'package:geo_economy_dashboard/common/countries/views/country_detail_screen.dart';
 import 'package:geo_economy_dashboard/features/accessibility/views/accessibility_settings_screen.dart';
+import 'package:geo_economy_dashboard/features/admin/views/admin_login_screen.dart';
+import 'package:geo_economy_dashboard/features/admin/views/admin_dashboard_screen.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 import 'package:geo_economy_dashboard/common/countries/models/country.dart';
 import 'package:geo_economy_dashboard/common/main_navigation/main_navigation_screen.dart';
@@ -154,6 +156,20 @@ GoRouter router(RouterRef ref) {
           final username = state.pathParameters['username']!;
           final tab = state.uri.queryParameters['tab'] ?? "";
           return UserProfileScreen(username: username, tab: tab);
+        },
+      ),
+      // 관리자 라우트
+      GoRoute(
+        path: '/admin/login',
+        name: AdminLoginScreen.routeName,
+        builder: (context, state) => const AdminLoginScreen(),
+      ),
+      GoRoute(
+        path: '/admin/dashboard',
+        name: AdminDashboardScreen.routeName,
+        builder: (context, state) {
+          print('[Router] Building admin dashboard');
+          return const AdminDashboardScreen();
         },
       ),
     ],

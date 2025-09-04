@@ -9,7 +9,8 @@
 - Purpose: Compare Korea’s economic indicators with OECD 38 countries, provide instant insight and shareable charts.
 
 ## 2. Core Features
-1. Data collection from World Bank API, stored in Firebase Firestore. When a user access country data 
+1. Data collection from World Bank API, stored in Firebase Firestore. 
+  - When a user access country or indicator data, data will be duplicated in local database, sqllite.
 2. Admin user with privileges:
    - Collect latest data from World Bank API
    - Audit Firestore for duplicates

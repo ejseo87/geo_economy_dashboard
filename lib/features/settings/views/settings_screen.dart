@@ -131,6 +131,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           _buildSection(
+            title: '관리자',
+            children: [
+              _buildActionTile(
+                icon: FontAwesomeIcons.userShield,
+                title: '관리자 모드',
+                subtitle: '시스템 관리 및 데이터 관리',
+                onTap: () => context.push('/admin/login'),
+                isDark: isDark,
+              ),
+            ],
+          ),
+          _buildSection(
             title: '정보',
             children: [
               _buildActionTile(
