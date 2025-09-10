@@ -7,7 +7,7 @@ part of 'comparison_view_model.dart';
 // **************************************************************************
 
 String _$indicatorRepositoryHash() =>
-    r'9cd71486210853143f7b70a1c5206b4282c695c0';
+    r'7712e6ad3db06ee0704d7ac6c1f9f15c13b2b0eb';
 
 /// See also [indicatorRepository].
 @ProviderFor(indicatorRepository)
@@ -26,7 +26,7 @@ final indicatorRepositoryProvider =
 // ignore: unused_element
 typedef IndicatorRepositoryRef = AutoDisposeProviderRef<IndicatorRepository>;
 String _$indicatorComparisonHash() =>
-    r'123f5200a6801a7d7e388f7a602ca1ff3ecaacef';
+    r'a139ebf0f4a55a94d21990063632108aa658c85d';
 
 /// Copied from Dart SDK
 class _SystemHash {

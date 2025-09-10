@@ -85,6 +85,7 @@ class IndicatorDetailService {
       oecdStats: oecdStats,
       trendAnalysis: trendAnalysis,
       lastCalculated: DateTime.now(),
+      dataYear: comparison.year, // 실제 데이터 년도 추가
     );
   }
 

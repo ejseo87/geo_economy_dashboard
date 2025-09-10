@@ -2,6 +2,7 @@ import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/gaps.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
+import 'package:geo_economy_dashboard/features/authentication/views/login_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/common/countries/widgets/country_selection_bottom_sheet.dart';
 import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
@@ -15,18 +16,24 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
   final bool showGear;
   final bool showGlobe;
   final bool showNotification;
+  final bool showLogin;
   final String? title;
 
   const AppBarWidget({
     super.key,
-    this.showGear = true,
+    this.showGear = false,
     this.showGlobe = true,
     this.showNotification = true,
+    this.showLogin = true,
     this.title,
   });
 
   void _onGearTap(BuildContext context) {
     context.pushNamed(SettingsScreen.routeName);
+  }
+
+  void _onLoginTap(BuildContext context) {
+    context.pushNamed(LoginScreen.routeName);
   }
 
   void _onGlobeTap(BuildContext context, WidgetRef ref) {
@@ -104,6 +111,15 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
       centerTitle: true,
       actions: [
         if (showNotification) const NotificationButton(),
+        if (showLogin)
+          IconButton(
+            icon: FaIcon(
+              FontAwesomeIcons.user,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
+              size: 20,
+            ),
+            onPressed: () => _onLoginTap(context),
+          ),
         if (showGear)
           IconButton(
             icon: FaIcon(

@@ -3,13 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/colors.dart';
-import '../../constants/sizes.dart';
-import '../../features/home/views/home_screen.dart';
-import '../../features/settings/views/settings_screen.dart';
 import '../../features/settings/view_models/settings_view_model.dart';
-import '../../features/search/views/search_screen.dart';
-import '../../features/favorites/views/favorites_screen.dart';
-import '../widgets/app_bar_widget.dart';
 import 'widgets/nav_tab.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {

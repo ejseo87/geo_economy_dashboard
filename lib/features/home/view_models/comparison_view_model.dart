@@ -1,5 +1,6 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/indicator_comparison.dart';
 import '../services/real_comparison_service.dart';
 import '../../worldbank/repositories/indicator_repository.dart';
@@ -50,14 +51,14 @@ class ComparisonViewModel extends _$ComparisonViewModel {
 
 // Repository 프로바이더
 @riverpod
-IndicatorRepository indicatorRepository(IndicatorRepositoryRef ref) {
+IndicatorRepository indicatorRepository(Ref ref) {
   return IndicatorRepository();
 }
 
 // 개별 지표 비교를 위한 프로바이더
 @riverpod
 Future<IndicatorComparison> indicatorComparison(
-  IndicatorComparisonRef ref,
+  Ref ref,
   String indicatorCode,
 ) async {
   try {

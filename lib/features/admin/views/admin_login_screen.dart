@@ -6,7 +6,6 @@ import '../../../constants/gaps.dart';
 import '../../../constants/typography.dart';
 import '../services/admin_auth_service.dart';
 import 'package:go_router/go_router.dart';
-import 'admin_dashboard_screen.dart';
 
 /// 관리자 로그인 화면
 class AdminLoginScreen extends ConsumerStatefulWidget {
@@ -45,10 +44,8 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         _passwordController.text,
       );
 
-      print('[AdminLogin] Login result: $success');
 
       if (success && mounted) {
-        print('[AdminLogin] Navigating to dashboard...');
         context.go('/admin/dashboard');
       } else {
         _showErrorDialog('로그인 실패', '사용자명 또는 비밀번호가 올바르지 않습니다.');

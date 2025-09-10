@@ -7,7 +7,7 @@ part of 'all_indicators_view_model.dart';
 // **************************************************************************
 
 String _$categoryPerformanceHash() =>
-    r'7c4b468f928a686fcfccf82381fadbdb5dad2923';
+    r'ee205933dbf2b5bdcafbe121d420f1823404c63d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -167,7 +167,7 @@ class _CategoryPerformanceProviderElement
 }
 
 String _$singleIndicatorComparisonHash() =>
-    r'fe87b9e4722a37afb16e44dbe9dbcb550cd1d486';
+    r'fe64b30c55583c8764d12cd8787f1b4ff0769f43';
 
 /// 단일 지표 비교 프로바이더 (개선된 버전)
 ///

@@ -7,13 +7,15 @@ import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
 import '../models/country.dart';
-import '../widgets/country_indicators_section.dart';
 import '../widgets/country_overview_card.dart';
 import '../../../features/favorites/widgets/favorites_floating_button.dart';
 import '../../../features/favorites/models/favorite_item.dart';
 import '../../../features/worldbank/models/indicator_codes.dart';
+import '../../widgets/data_year_badge.dart';
+import '../view_models/country_detail_view_model.dart';
+import '../services/country_detail_service.dart';
 
-class CountryDetailScreen extends ConsumerWidget {
+class CountryDetailScreen extends ConsumerStatefulWidget {
   static const String routeName = 'countryDetail';
   static const String routeURL = '/country/:countryCode';
 
@@ -22,7 +24,22 @@ class CountryDetailScreen extends ConsumerWidget {
   const CountryDetailScreen({super.key, required this.country});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CountryDetailScreen> createState() => _CountryDetailScreenState();
+}
+
+class _CountryDetailScreenState extends ConsumerState<CountryDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(countryDetailViewModelProvider(widget.country).notifier).loadCountryDetail();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final countryDetailState = ref.watch(countryDetailViewModelProvider(widget.country));
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -33,13 +50,13 @@ class CountryDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(Sizes.size16),
               child: Column(
                 children: [
-                  _build10YearLineChart(),
+                  _build10YearLineChart(countryDetailState),
                   const SizedBox(height: Sizes.size16),
-                  _buildOECDComparisonChart(),
+                  _buildOECDComparisonChart(countryDetailState),
                   const SizedBox(height: Sizes.size16),
-                  _buildIndicatorButtonsGrid(context),
+                  _buildIndicatorButtonsGrid(context, countryDetailState),
                   const SizedBox(height: Sizes.size16),
-                  CountryOverviewCard(country: country),
+                  CountryOverviewCard(country: widget.country),
                 ],
               ),
             ),
@@ -48,7 +65,7 @@ class CountryDetailScreen extends ConsumerWidget {
       ),
       floatingActionButton: FavoritesFloatingButton(
         favoriteItem: FavoriteItemFactory.createCountrySummary(
-          country: country,
+          country: widget.country,
           indicators: [
             IndicatorCode.gdpRealGrowth,
             IndicatorCode.cpiInflation,
@@ -75,12 +92,12 @@ class CountryDetailScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              country.flagEmoji.isNotEmpty ? country.flagEmoji : '🏳️',
+              widget.country.flagEmoji.isNotEmpty ? widget.country.flagEmoji : '🏳️',
               style: const TextStyle(fontSize: 24),
             ),
             const SizedBox(height: 4),
             Text(
-              country.nameKo,
+              widget.country.nameKo,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.white,
                 fontSize: 16,
@@ -102,12 +119,12 @@ class CountryDetailScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  country.flagEmoji.isNotEmpty ? country.flagEmoji : '🏳️',
+                  widget.country.flagEmoji.isNotEmpty ? widget.country.flagEmoji : '🏳️',
                   style: const TextStyle(fontSize: 80),
                 ),
                 const SizedBox(height: Sizes.size8),
                 Text(
-                  country.nameKo,
+                  widget.country.nameKo,
                   style: AppTypography.heading2.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.bold,
@@ -124,7 +141,7 @@ class CountryDetailScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${country.region} • ${country.code}',
+                    '${widget.country.region} • ${widget.country.code}',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.white,
                       fontSize: 12,
@@ -140,7 +157,7 @@ class CountryDetailScreen extends ConsumerWidget {
   }
 
   // 10년 라인 차트
-  Widget _build10YearLineChart() {
+  Widget _build10YearLineChart(CountryDetailState state) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -157,114 +174,44 @@ class CountryDetailScreen extends ConsumerWidget {
                   size: 20,
                 ),
                 const SizedBox(width: Sizes.size8),
-                Text(
-                  '10년 GDP 성장률 추이',
-                  style: AppTypography.heading3.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'GDP 성장률 추이',
+                    style: AppTypography.heading3.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (state.gdpHistory.isNotEmpty)
+                  DataRangeBadge(
+                    startYear: state.gdpHistory.first.year,
+                    endYear: state.gdpHistory.last.year,
+                    totalCount: state.gdpHistory.length,
+                  )
+                else
+                  DataRangeBadge(
+                    startYear: DateTime.now().year - 10,
+                    endYear: DateTime.now().year - 1,
+                    totalCount: 10,
+                  ),
               ],
             ),
             const SizedBox(height: Sizes.size16),
             SizedBox(
               height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: true,
-                    horizontalInterval: 1,
-                    verticalInterval: 1,
-                    getDrawingHorizontalLine: (value) => FlLine(
-                      color: AppColors.outline.withValues(alpha: 0.3),
-                      strokeWidth: 1,
-                    ),
-                    getDrawingVerticalLine: (value) => FlLine(
-                      color: AppColors.outline.withValues(alpha: 0.3),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        interval: 1,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          final year = 2014 + value.toInt();
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              year.toString(),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          );
-                        },
+              child: state.isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : state.gdpHistory.isEmpty
+                  ? Center(
+                      child: Text(
+                        'GDP 데이터가 없습니다',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 2,
-                        reservedSize: 35,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              '${value.toInt()}%',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: Border.all(
-                      color: AppColors.outline.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  minX: 0,
-                  maxX: 9,
-                  minY: -4,
-                  maxY: 8,
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: _getMockGdpData(),
-                      isCurved: true,
-                      color: AppColors.primary,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) =>
-                            FlDotCirclePainter(
-                              radius: 4,
-                              color: AppColors.primary,
-                              strokeWidth: 2,
-                              strokeColor: Colors.white,
-                            ),
-                      ),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    )
+                  : _buildGdpLineChart(state.gdpHistory),
             ),
           ],
         ),
@@ -273,7 +220,7 @@ class CountryDetailScreen extends ConsumerWidget {
   }
 
   // OECD 대비 바 차트
-  Widget _buildOECDComparisonChart() {
+  Widget _buildOECDComparisonChart(CountryDetailState state) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -290,103 +237,35 @@ class CountryDetailScreen extends ConsumerWidget {
                   size: 20,
                 ),
                 const SizedBox(width: Sizes.size8),
-                Text(
-                  'OECD 평균 대비 비교',
-                  style: AppTypography.heading3.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'OECD 평균 대비 비교',
+                    style: AppTypography.heading3.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                DataStatusBadge(
+                  year: state.oecdDataYear ?? (DateTime.now().year - 1)
+                ), // 실제 데이터 년도
               ],
             ),
             const SizedBox(height: Sizes.size16),
             SizedBox(
               height: 250,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: 15,
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) =>
-                          AppColors.textPrimary.withValues(alpha: 0.8),
-                      tooltipRoundedRadius: 8,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final String indicator = _getIndicatorName(groupIndex);
-                        final String value = '${rod.toY.toStringAsFixed(1)}%';
-                        return BarTooltipItem(
-                          '$indicator\n$value',
-                          TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                _getIndicatorShortName(value.toInt()),
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+              child: state.isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : state.oecdComparison.isEmpty
+                  ? Center(
+                      child: Text(
+                        'OECD 비교 데이터가 없습니다',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 35,
-                        getTitlesWidget: (double value, TitleMeta meta) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              '${value.toInt()}%',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: Border.all(
-                      color: AppColors.outline.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  barGroups: _getMockOECDComparisonData(),
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: true,
-                    horizontalInterval: 2,
-                    getDrawingHorizontalLine: (value) => FlLine(
-                      color: AppColors.outline.withValues(alpha: 0.3),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                ),
-              ),
+                    )
+                  : _buildOecdBarChart(state.oecdComparison),
             ),
           ],
         ),
@@ -395,7 +274,7 @@ class CountryDetailScreen extends ConsumerWidget {
   }
 
   // 기타 지표 버튼 그리드
-  Widget _buildIndicatorButtonsGrid(BuildContext context) {
+  Widget _buildIndicatorButtonsGrid(BuildContext context, CountryDetailState state) {
     final indicators = [
       {
         'code': IndicatorCode.gdpRealGrowth,
@@ -473,7 +352,7 @@ class CountryDetailScreen extends ConsumerWidget {
                 return InkWell(
                   onTap: () {
                     context.push(
-                      '/indicator/${indicatorCode.code}/${country.code}',
+                      '/indicator/${indicatorCode.code}/${widget.country.code}',
                     );
                   },
                   borderRadius: BorderRadius.circular(8),
@@ -538,120 +417,262 @@ class CountryDetailScreen extends ConsumerWidget {
     );
   }
 
-  // Mock 데이터 생성 메서드들
-  List<FlSpot> _getMockGdpData() {
-    // 한국의 GDP 성장률 샘플 데이터 (2014-2023)
-    return [
-      const FlSpot(0, 3.2), // 2014
-      const FlSpot(1, 2.8), // 2015
-      const FlSpot(2, 2.9), // 2016
-      const FlSpot(3, 3.2), // 2017
-      const FlSpot(4, 2.7), // 2018
-      const FlSpot(5, 2.0), // 2019
-      const FlSpot(6, -0.7), // 2020
-      const FlSpot(7, 4.3), // 2021
-      const FlSpot(8, 3.1), // 2022
-      const FlSpot(9, 3.1), // 2023
-    ];
-  }
-
-  List<BarChartGroupData> _getMockOECDComparisonData() {
-    return [
-      BarChartGroupData(
-        x: 0,
-        barRods: [
-          BarChartRodData(
-            toY: 3.1,
-            color: AppColors.primary,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
+  // 실제 데이터를 사용한 차트 메서드들
+  Widget _buildGdpLineChart(List<GdpDataPoint> gdpData) {
+    if (gdpData.isEmpty) return const SizedBox.shrink();
+    
+    final spots = gdpData.map((point) => 
+        FlSpot(point.xIndex.toDouble(), point.value)).toList();
+    
+    // 동적 범위 계산
+    final values = gdpData.map((e) => e.value).toList();
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final padding = (maxValue - minValue) * 0.2;
+    
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          horizontalInterval: 1,
+          verticalInterval: 1,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: AppColors.outline.withValues(alpha: 0.3),
+            strokeWidth: 1,
+          ),
+          getDrawingVerticalLine: (value) => FlLine(
+            color: AppColors.outline.withValues(alpha: 0.3),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: 1,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final index = value.toInt();
+                if (index >= 0 && index < gdpData.length) {
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    child: Text(
+                      gdpData[index].year.toString(),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ),
-          BarChartRodData(
-            toY: 2.8,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 2,
+              reservedSize: 35,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  child: Text(
+                    '${value.toStringAsFixed(1)}%',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(
+            color: AppColors.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        minX: 0,
+        maxX: (gdpData.length - 1).toDouble(),
+        minY: minValue - padding,
+        maxY: maxValue + padding,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: AppColors.primary,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 4,
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                    strokeColor: Colors.white,
+                  ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: AppColors.primary.withValues(alpha: 0.1),
             ),
           ),
         ],
       ),
-      BarChartGroupData(
-        x: 1,
-        barRods: [
-          BarChartRodData(
-            toY: 3.8,
-            color: AppColors.primary,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-          BarChartRodData(
-            toY: 5.2,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      ),
-      BarChartGroupData(
-        x: 2,
-        barRods: [
-          BarChartRodData(
-            toY: 3.6,
-            color: AppColors.primary,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-          BarChartRodData(
-            toY: 4.1,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      ),
-    ];
+    );
   }
 
-  String _getIndicatorName(int index) {
-    switch (index) {
-      case 0:
-        return 'GDP 성장률';
-      case 1:
-        return '실업률';
-      case 2:
-        return 'CPI 인플레이션';
-      default:
-        return '지표';
-    }
+  Widget _buildOecdBarChart(List<OecdComparisonData> oecdData) {
+    if (oecdData.isEmpty) return const SizedBox.shrink();
+    
+    // 동적 범위 계산
+    final allValues = oecdData.expand((e) => [e.countryValue, e.oecdAverage]).toList();
+    final maxValue = allValues.reduce((a, b) => a > b ? a : b);
+    final dynamicMaxY = (maxValue * 1.2).ceil().toDouble();
+    
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: dynamicMaxY,
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) =>
+                AppColors.textPrimary.withValues(alpha: 0.8),
+            tooltipRoundedRadius: 8,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              if (groupIndex < oecdData.length) {
+                final data = oecdData[groupIndex];
+                final isCountry = rodIndex == 0;
+                final value = isCountry ? data.countryValue : data.oecdAverage;
+                final label = isCountry ? widget.country.nameKo : 'OECD 평균';
+                return BarTooltipItem(
+                  '$label\n${value.toStringAsFixed(1)}%',
+                  TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }
+              return null;
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final index = value.toInt();
+                if (index < oecdData.length) {
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        _getIndicatorShortName(oecdData[index].indicatorName),
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 35,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  child: Text(
+                    '${value.toStringAsFixed(1)}%',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(
+            color: AppColors.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        barGroups: oecdData.map((data) => 
+          BarChartGroupData(
+            x: data.xIndex,
+            barRods: [
+              BarChartRodData(
+                toY: data.countryValue,
+                color: AppColors.primary,
+                width: 20,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+              BarChartRodData(
+                toY: data.oecdAverage,
+                color: AppColors.textSecondary.withValues(alpha: 0.5),
+                width: 20,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ).toList(),
+        gridData: FlGridData(
+          show: true,
+          drawHorizontalLine: true,
+          horizontalInterval: dynamicMaxY / 5,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: AppColors.outline.withValues(alpha: 0.3),
+            strokeWidth: 1,
+          ),
+        ),
+      ),
+    );
   }
 
-  String _getIndicatorShortName(int index) {
-    switch (index) {
-      case 0:
+
+  String _getIndicatorShortName(String indicatorName) {
+    switch (indicatorName) {
+      case 'GDP 실질성장률':
         return 'GDP\n성장률';
-      case 1:
+      case '실업률':
         return '실업률';
-      case 2:
+      case 'CPI 인플레이션':
         return 'CPI\n인플레이션';
       default:
-        return '지표';
+        return indicatorName.replaceAll(' ', '\n');
     }
   }
 }

@@ -40,7 +40,7 @@ class SignUpViewModel extends AsyncNotifier<void> {
         // Check if user is actually logged in despite the error
         if (_authenticationRepository.isLoggedIn && context.mounted) {
           // Authentication succeeded despite keychain issues
-          context.go("/home");
+          context.go("/");
           return;
         }
       }
@@ -50,7 +50,7 @@ class SignUpViewModel extends AsyncNotifier<void> {
         showFirebaseErrorSnack(context: context, error: error);
       }
     } else if (context.mounted) {
-      context.go("/home");
+      context.go("/");
     }
   }
 

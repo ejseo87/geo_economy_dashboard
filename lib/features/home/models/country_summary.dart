@@ -62,6 +62,7 @@ class KeyIndicator {
   final PerformanceLevel performance; // indicator_comparison.dart에서 import
   final String direction; // 'higher', 'lower', 'neutral'
   final String? sparklineEmoji; // 트렌드를 나타내는 이모지
+  final int dataYear; // 데이터 기준 년도
 
   const KeyIndicator({
     required this.code,
@@ -74,6 +75,7 @@ class KeyIndicator {
     required this.performance,
     required this.direction,
     this.sparklineEmoji,
+    required this.dataYear,
   });
 
   /// 순위 기반 배지 텍스트
@@ -103,6 +105,7 @@ class KeyIndicator {
       'performance': performance.toString().split('.').last,
       'direction': direction,
       'sparklineEmoji': sparklineEmoji,
+      'dataYear': dataYear,
     };
   }
 
@@ -122,6 +125,7 @@ class KeyIndicator {
       ),
       direction: json['direction'] as String,
       sparklineEmoji: json['sparklineEmoji'] as String?,
+      dataYear: json['dataYear'] as int? ?? 2023, // 기본값 설정
     );
   }
 }

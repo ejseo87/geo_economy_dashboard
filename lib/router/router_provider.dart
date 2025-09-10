@@ -17,11 +17,12 @@ import 'package:geo_economy_dashboard/features/splash/views/splash_screen.dart';
 import 'package:geo_economy_dashboard/router/router_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'router_provider.g.dart';
 
 @riverpod
-GoRouter router(RouterRef ref) {
+GoRouter router(Ref ref) {
   return GoRouter(
     initialLocation: "/splash",
     debugLogDiagnostics: true,
@@ -167,10 +168,7 @@ GoRouter router(RouterRef ref) {
       GoRoute(
         path: '/admin/dashboard',
         name: AdminDashboardScreen.routeName,
-        builder: (context, state) {
-          print('[Router] Building admin dashboard');
-          return const AdminDashboardScreen();
-        },
+        builder: (context, state) => const AdminDashboardScreen(),
       ),
     ],
   );

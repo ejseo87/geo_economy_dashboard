@@ -465,7 +465,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           onTap: () async {
             // 검색 기록에 추가
             await SearchHistoryService.addSearchHistory(country.nameKo);
-            context.push('/country/${country.code}');
+            if (mounted) {
+              context.push('/country/${country.code}');
+            }
           },
         );
       },
@@ -511,12 +513,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             // 검색 기록에 추가
             await SearchHistoryService.addSearchHistory(indicator.name);
             // TODO: Navigate to indicator detail screen with selected country
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${indicator.name} 상세 화면 준비중'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${indicator.name} 상세 화면 준비중'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            }
           },
         );
       },

@@ -9,7 +9,6 @@ import '../services/worldbank_data_collector.dart';
 import '../services/firestore_data_manager.dart';
 import '../models/admin_user.dart';
 import 'package:go_router/go_router.dart';
-import 'admin_login_screen.dart';
 
 /// 관리자 대시보드 화면
 class AdminDashboardScreen extends ConsumerStatefulWidget {
@@ -46,17 +45,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
   void _checkAuthStatus() {
     final isLoggedIn = AdminAuthService.instance.isLoggedIn;
-    print('[AdminDashboard] Auth status check: isLoggedIn=$isLoggedIn');
     
     if (!isLoggedIn) {
-      print('[AdminDashboard] Not logged in, redirecting to login...');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           context.go('/admin/login');
         }
       });
     } else {
-      print('[AdminDashboard] User is logged in, showing dashboard');
     }
   }
 
@@ -906,20 +902,24 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                     newPasswordController.text,
                   );
 
-                  if (success) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('비밀번호가 성공적으로 변경되었습니다.')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('현재 비밀번호가 올바르지 않습니다.')),
-                    );
+                  if (mounted) {
+                    if (success) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('비밀번호가 성공적으로 변경되었습니다.')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('현재 비밀번호가 올바르지 않습니다.')),
+                      );
+                    }
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('비밀번호 변경 실패: ${e.toString()}')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('비밀번호 변경 실패: ${e.toString()}')),
+                    );
+                  }
                 } finally {
                   setState(() => isLoading = false);
                 }

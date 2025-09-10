@@ -187,7 +187,9 @@ class _NotificationModalState extends ConsumerState<NotificationModal> {
     setState(() {});
     
     // TODO: 알림에 따른 화면 이동 처리
-    Navigator.of(context).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   void _removeNotification(String notificationId) async {

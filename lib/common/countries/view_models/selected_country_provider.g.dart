@@ -7,7 +7,7 @@ part of 'selected_country_provider.dart';
 // **************************************************************************
 
 String _$selectedCountryCodeHash() =>
-    r'808b504acafc436a0042ad237d1629b826a7d2a5';
+    r'619ed45e23f0db4699a0079bcbec5bf1a33e8dbf';
 
 /// 선택된 국가 정보를 제공하는 편의 Provider들
 ///
@@ -27,7 +27,7 @@ final selectedCountryCodeProvider = AutoDisposeProvider<String>.internal(
 // ignore: unused_element
 typedef SelectedCountryCodeRef = AutoDisposeProviderRef<String>;
 String _$selectedCountryNameHash() =>
-    r'a5a2077e6f9f784bff471d62b198cc8c29d6b3f8';
+    r'c96614e059cbdea7e3ba19cdabc6d693e7207309';
 
 /// See also [selectedCountryName].
 @ProviderFor(selectedCountryName)
@@ -45,7 +45,7 @@ final selectedCountryNameProvider = AutoDisposeProvider<String>.internal(
 // ignore: unused_element
 typedef SelectedCountryNameRef = AutoDisposeProviderRef<String>;
 String _$selectedCountryFlagHash() =>
-    r'c936b83c6dd8dc82985f8b74f13d26743b11de8a';
+    r'79cc2e161eabca769a89c85505310c06a76bffc7';
 
 /// See also [selectedCountryFlag].
 @ProviderFor(selectedCountryFlag)
@@ -62,7 +62,7 @@ final selectedCountryFlagProvider = AutoDisposeProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SelectedCountryFlagRef = AutoDisposeProviderRef<String>;
-String _$isKoreaSelectedHash() => r'bc6686759e4736b01122b8bce70bd1539e4c4a00';
+String _$isKoreaSelectedHash() => r'dbfbc0df05d58a18616c8c90d2ea60efc206d40e';
 
 /// 국가가 한국인지 확인하는 Provider
 ///

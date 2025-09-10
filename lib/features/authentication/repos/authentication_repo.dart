@@ -26,7 +26,9 @@ class AuthenticationRepository {
 
   Future<void> signOut(BuildContext context) async {
     await _firebaseAuth.signOut();
-    showInfoSnackBar(title: "Log out...", context: context);
+    if (context.mounted) {
+      showInfoSnackBar(title: "Log out...", context: context);
+    }
   }
 
   Future<void> signIn({required String email, required String password}) async {

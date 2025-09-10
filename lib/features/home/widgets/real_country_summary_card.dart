@@ -12,6 +12,7 @@ import '../../worldbank/models/indicator_codes.dart';
 import '../../../common/countries/view_models/selected_country_provider.dart';
 import '../../favorites/models/favorite_item.dart';
 import '../../favorites/widgets/favorites_floating_button.dart';
+import '../../../common/widgets/data_year_badge.dart';
 
 class RealCountrySummaryCard extends ConsumerStatefulWidget {
   const RealCountrySummaryCard({super.key});
@@ -263,12 +264,19 @@ class _RealCountrySummaryCardState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '주요 지표',
-          style: AppTypography.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+        Row(
+          children: [
+            Text(
+              '주요 지표',
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (indicators.isNotEmpty)
+              DataStatusBadge(year: indicators.first.dataYear),
+          ],
         ),
         Gaps.v12,
         ...indicators.map(

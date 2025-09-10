@@ -245,7 +245,6 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
 
   List<LineChartBarData> _buildLineBarsData(int minYear) {
     final List<LineChartBarData> lines = [];
-    int colorIndex = 0;
 
     widget.countryData.forEach((countryCode, dataPoints) {
       final color = _getCountryColor(countryCode);
@@ -283,7 +282,6 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
           preventCurveOverShooting: true,
         ),
       );
-      colorIndex++;
     });
 
     return lines;

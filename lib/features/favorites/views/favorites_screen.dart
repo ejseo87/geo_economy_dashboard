@@ -53,6 +53,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
       appBar: const AppBarWidget(
         title: '즐겨찾기',
         showGlobe: false,
+        showLogin: true,
       ),
       body: Column(
         children: [
@@ -133,7 +134,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
     return Consumer(
       builder: (context, ref, child) {
         // Watch the bookmark state to rebuild when bookmarks change
-        final bookmarks = ref.watch(bookmarkViewModelProvider);
+        ref.watch(bookmarkViewModelProvider);
         final currentBookmarkItems = ref.read(bookmarkViewModelProvider.notifier).getBookmarkItems();
         
         if (currentBookmarkItems.isEmpty) {

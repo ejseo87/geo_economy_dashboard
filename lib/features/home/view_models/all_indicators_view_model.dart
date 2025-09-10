@@ -1,5 +1,6 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/indicator_comparison.dart';
 import '../services/all_indicators_service.dart';
 import '../../worldbank/models/indicator_codes.dart';
@@ -57,7 +58,7 @@ class AllIndicatorsViewModel extends _$AllIndicatorsViewModel {
 /// 특정 카테고리 성과 요약 프로바이더
 @riverpod
 Future<CategoryPerformanceSummary> categoryPerformance(
-  CategoryPerformanceRef ref,
+  Ref ref,
   String category,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);
@@ -77,7 +78,7 @@ Future<CategoryPerformanceSummary> categoryPerformance(
 /// 단일 지표 비교 프로바이더 (개선된 버전)
 @riverpod
 Future<IndicatorComparison> singleIndicatorComparison(
-  SingleIndicatorComparisonRef ref,
+  Ref ref,
   IndicatorCode indicatorCode,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);

@@ -35,7 +35,7 @@ class ComparisonService {
       indicatorCode: 'NY.GDP.MKTP.KD.ZG',
       indicatorName: 'GDP 성장률',
       unit: '%',
-      year: 2023,
+      year: DateTime.now().year - 1,
       selectedCountry: CountryData(
         countryCode: 'KOR',
         countryName: '대한민국',
@@ -72,7 +72,7 @@ class ComparisonService {
         summary: '한국의 GDP 성장률은 OECD 미디안보다 높아 상위 40% 수준입니다.',
         detailedAnalysis:
             '''
-한국의 2023년 GDP 성장률 3.1%는 OECD 미디안 2.4%를 0.7%p 상회하며, 
+한국의 ${DateTime.now().year - 1}년 GDP 성장률 3.1%는 OECD 미디안 2.4%를 0.7%p 상회하며, 
 38개국 중 15위를 기록했습니다. 이는 주요 선진국 대비 양호한 성과로, 
 특히 독일(-0.3%), 일본(1.9%) 등 주요 경제대국을 상회했습니다.
         '''
@@ -105,7 +105,7 @@ class ComparisonService {
       indicatorCode: 'SL.UEM.TOTL.ZS',
       indicatorName: '실업률',
       unit: '%',
-      year: 2023,
+      year: DateTime.now().year - 1,
       selectedCountry: CountryData(
         countryCode: 'KOR',
         countryName: '대한민국',
@@ -142,7 +142,7 @@ class ComparisonService {
         summary: '한국의 실업률은 OECD 최상위 수준으로 매우 우수합니다.',
         detailedAnalysis:
             '''
-한국의 2023년 실업률 2.9%는 OECD 미디안 5.8%를 크게 하회하며, 
+한국의 ${DateTime.now().year - 1}년 실업률 2.9%는 OECD 미디안 5.8%를 크게 하회하며, 
 38개국 중 4위의 우수한 성과를 기록했습니다. 이는 일본(2.6%), 
 독일(3.0%)과 함께 OECD 최상위 그룹에 속하는 수준입니다.
         '''

@@ -95,6 +95,7 @@ class IndicatorDetail {
   final OECDStats oecdStats;
   final TrendAnalysis trendAnalysis;
   final DateTime? lastCalculated;
+  final int dataYear; // 최신 데이터 년도
 
   const IndicatorDetail({
     required this.metadata,
@@ -107,6 +108,7 @@ class IndicatorDetail {
     required this.oecdStats,
     required this.trendAnalysis,
     this.lastCalculated,
+    required this.dataYear,
   });
 }
 

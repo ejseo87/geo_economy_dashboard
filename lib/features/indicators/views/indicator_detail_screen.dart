@@ -19,6 +19,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../common/services/share_service.dart';
 import '../../../common/logger.dart';
+import '../../../common/widgets/data_year_badge.dart';
 
 /// 지표 상세 화면
 class IndicatorDetailScreen extends ConsumerWidget {
@@ -36,6 +37,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     bool isBookmarked,
+    int? dataYear,
   ) {
     final definition = IndicatorDefinitionsService.instance.getDefinition(indicatorCode);
     
@@ -43,12 +45,24 @@ class IndicatorDetailScreen extends ConsumerWidget {
       title: Row(
         children: [
           Expanded(
-            child: Text(
-              indicatorCode.name,
-              style: AppTypography.heading3.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  indicatorCode.name,
+                  style: AppTypography.heading3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (dataYear != null) ...[
+                  const SizedBox(height: 2),
+                  DataYearBadge(
+                    year: dataYear,
+                    isLatest: dataYear >= (DateTime.now().year - 1),
+                  ),
+                ],
+              ],
             ),
           ),
           if (definition != null) ...[
@@ -73,7 +87,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/');
             }
           } catch (e) {
             context.go('/home');
@@ -112,7 +126,11 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(context, ref, isBookmarked),
+      appBar: detailAsync.when(
+        loading: () => _buildAppBar(context, ref, isBookmarked, null),
+        error: (_, __) => _buildAppBar(context, ref, isBookmarked, null),
+        data: (detail) => _buildAppBar(context, ref, isBookmarked, detail.dataYear),
+      ),
       body: RepaintBoundary(
         key: _repaintBoundaryKey,
         child: detailAsync.when(
@@ -1671,7 +1689,6 @@ class IndicatorDetailScreen extends ConsumerWidget {
   void _exportAsCSV(BuildContext context) async {
     try {
       // 현재 로딩된 데이터가 있는지 확인
-      final detailAsync = context.findAncestorWidgetOfExactType<RepaintBoundary>()?.key;
       
       // 로딩 표시
       ScaffoldMessenger.of(context).showSnackBar(

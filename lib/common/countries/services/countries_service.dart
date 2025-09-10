@@ -125,7 +125,7 @@ class CountriesService {
       }
     } catch (e) {
       AppLogger.error('[CountriesService] Failed to load from Firestore: $e');
-      throw e;
+      rethrow;
     }
   }
 

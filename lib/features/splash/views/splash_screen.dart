@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
@@ -100,12 +99,12 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 로고 (세계지도 + 라인차트)
+                        // 로고 이미지
                         Container(
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
@@ -115,28 +114,14 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ],
                           ),
-                          child: const Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // 세계지도 아이콘
-                              Positioned(
-                                top: 20,
-                                child: FaIcon(
-                                  FontAwesomeIcons.earthAmericas,
-                                  size: 40,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              // 라인차트 아이콘
-                              Positioned(
-                                bottom: 20,
-                                child: FaIcon(
-                                  FontAwesomeIcons.chartLine,
-                                  size: 32,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ],
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
 

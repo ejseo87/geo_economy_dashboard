@@ -35,7 +35,7 @@ class LoginViewModel extends AsyncNotifier<void> {
         // Check if user is actually logged in despite the error
         if (_authenticationRepository.isLoggedIn && context.mounted) {
           // Authentication succeeded despite keychain issues
-          context.go("/home");
+          context.go("/");
           return;
         }
       }
@@ -49,7 +49,7 @@ class LoginViewModel extends AsyncNotifier<void> {
       }
     } else {
       if (context.mounted) {
-        context.go("/home");
+        context.go("/");
       }
     }
   }

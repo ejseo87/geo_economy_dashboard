@@ -29,6 +29,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
         title: '접근성',
         showGlobe: false,
         showNotification: false,
+        showGear: true,
+        showLogin: false,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -239,7 +241,6 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: ColorblindType.values.map((type) {
-              final isSelected = settings.colorblindMode && settings.colorblindType == type;
               return RadioListTile<ColorblindType>(
                 title: Text(
                   type.displayName,
@@ -248,7 +249,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 value: type,
-                groupValue: settings.colorblindMode ? settings.colorblindType : null,
+                toggleable: true,
+                selected: settings.colorblindMode && settings.colorblindType == type,
                 onChanged: (value) {
                   if (value != null) {
                     notifier.setColorblindMode(value != ColorblindType.none, value);
@@ -308,7 +310,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
       trailing: Switch.adaptive(
         value: value,
         onChanged: onToggle,
-        activeColor: AccessibilityService.instance.adjustColorForColorblind(
+        activeTrackColor: AccessibilityService.instance.adjustColorForColorblind(
           AppColors.primary,
         ),
       ),

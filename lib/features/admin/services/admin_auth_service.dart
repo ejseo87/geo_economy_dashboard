@@ -72,9 +72,6 @@ class AdminAuthService {
       // 세션 저장
       await _saveSession();
 
-      print('[AdminAuthService] Login successful for: $username');
-      print('[AdminAuthService] Current admin: ${_currentAdmin?.username}');
-      print('[AdminAuthService] isLoggedIn: $isLoggedIn');
       
       AppLogger.info('[AdminAuthService] Admin logged in successfully: $username');
       return true;
@@ -187,7 +184,7 @@ class AdminAuthService {
 
   /// 패스워드 해시
   String _hashPassword(String password) {
-    final bytes = utf8.encode(password + 'geo_economy_salt');
+    final bytes = utf8.encode('${password}_geo_economy_salt');
     final digest = sha256.convert(bytes);
     return digest.toString();
   }

@@ -68,6 +68,7 @@ class CountrySummaryViewModel extends _$CountrySummaryViewModel {
         performance: comparison.insight.performance,
         direction: 'higher', // 기본값 설정
         sparklineEmoji: _getSparklineEmoji(comparison.insight.performance),
+        dataYear: comparison.year, // 실제 데이터 년도 추가
       )).toList();
       
       final summary = CountrySummary(

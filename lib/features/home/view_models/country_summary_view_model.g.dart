@@ -7,7 +7,7 @@ part of 'country_summary_view_model.dart';
 // **************************************************************************
 
 String _$countrySummaryViewModelHash() =>
-    r'a7e8b97fb16cdd0222a9e76cf696cac2950a8bb4';
+    r'618e966a2e41f5354bc7766bc72abe67ecb9fd6a';
 
 /// See also [CountrySummaryViewModel].
 @ProviderFor(CountrySummaryViewModel)

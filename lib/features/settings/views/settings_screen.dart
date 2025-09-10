@@ -52,6 +52,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: "설정",
         showGlobe: false,
         showNotification: false,
+        showGear: true,
+        showLogin: false,
       ),
       body: ListView(
         children: [

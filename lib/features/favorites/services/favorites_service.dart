@@ -7,7 +7,6 @@ import '../models/favorite_item.dart';
 class FavoritesService {
   static const String _keyPrefix = 'favorites_';
   static const String _keyFavoritesList = '${_keyPrefix}list';
-  static const String _keyFavoritesSettings = '${_keyPrefix}settings';
   static const int _maxFavorites = 50; // 무료 사용자 기본 제한
   
   static FavoritesService? _instance;

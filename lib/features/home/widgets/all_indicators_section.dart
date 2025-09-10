@@ -7,13 +7,15 @@ import '../services/all_indicators_service.dart';
 import '../view_models/all_indicators_view_model.dart';
 import '../models/indicator_comparison.dart';
 import 'category_indicators_card.dart';
+import '../../../common/widgets/data_year_badge.dart';
 
 /// 전체 20개 지표를 카테고리별로 표시하는 섹션
 class AllIndicatorsSection extends ConsumerStatefulWidget {
   const AllIndicatorsSection({super.key});
 
   @override
-  ConsumerState<AllIndicatorsSection> createState() => _AllIndicatorsSectionState();
+  ConsumerState<AllIndicatorsSection> createState() =>
+      _AllIndicatorsSectionState();
 }
 
 class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
@@ -37,10 +39,7 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
       margin: const EdgeInsets.symmetric(horizontal: 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          _buildContent(allIndicatorsAsync),
-        ],
+        children: [_buildHeader(), _buildContent(allIndicatorsAsync)],
       ),
     );
   }
@@ -60,19 +59,42 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Text(
-              '📊',
-              style: TextStyle(fontSize: 20),
-            ),
+            child: Text('📊', style: TextStyle(fontSize: 20)),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '핵심 ${IndicatorCatalogUtils.totalIndicatorCount}개 지표 전체 현황',
-                  style: AppTypography.bodyMediumBold,
+                Row(
+                  children: [
+                    Text(
+                      '핵심 ${IndicatorCatalogUtils.totalIndicatorCount}개 지표 전체 현황',
+                      style: AppTypography.bodyMediumBold,
+                    ),
+                    const SizedBox(width: 8),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final indicatorsAsync = ref.watch(
+                          allIndicatorsViewModelProvider,
+                        );
+                        return indicatorsAsync.when(
+                          data: (categoryData) {
+                            final firstCategory = categoryData.values.isNotEmpty
+                                ? categoryData.values.first
+                                : <IndicatorComparison>[];
+                            return firstCategory.isNotEmpty
+                                ? DataStatusBadge(
+                                    year: firstCategory.first.year,
+                                  )
+                                : const DataStatusBadge(year: 2024);
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 Text(
                   '${IndicatorCatalogUtils.indicatorCountByCategory.length}개 카테고리별로 분류된 경제지표 상세보기',
@@ -85,7 +107,9 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
           ),
           IconButton(
             onPressed: () {
-              ref.read(allIndicatorsViewModelProvider.notifier).refreshIndicators();
+              ref
+                  .read(allIndicatorsViewModelProvider.notifier)
+                  .refreshIndicators();
             },
             icon: const Icon(Icons.refresh),
             color: AppColors.primary,
@@ -95,7 +119,9 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
     );
   }
 
-  Widget _buildContent(AsyncValue<Map<String, List<IndicatorComparison>>> allIndicatorsAsync) {
+  Widget _buildContent(
+    AsyncValue<Map<String, List<IndicatorComparison>>> allIndicatorsAsync,
+  ) {
     return allIndicatorsAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(32),
@@ -105,17 +131,11 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: AppColors.error,
-            ),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 8),
             Text(
               '데이터를 불러올 수 없습니다',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.error,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
             ),
             const SizedBox(height: 8),
             Text(
@@ -128,7 +148,9 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                ref.read(allIndicatorsViewModelProvider.notifier).loadAllIndicators();
+                ref
+                    .read(allIndicatorsViewModelProvider.notifier)
+                    .loadAllIndicators();
               },
               child: const Text('다시 시도'),
             ),
@@ -171,8 +193,8 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
                   isExpanded: expandedCategory == category,
                   onToggle: () {
                     setState(() {
-                      expandedCategory = expandedCategory == category 
-                          ? null 
+                      expandedCategory = expandedCategory == category
+                          ? null
                           : category;
                     });
                   },
@@ -227,15 +249,9 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
         children: [
           Row(
             children: [
-              Text(
-                '📈',
-                style: TextStyle(fontSize: 16),
-              ),
+              Text('📈', style: TextStyle(fontSize: 16)),
               SizedBox(width: 8),
-              Text(
-                '전체 성과 요약',
-                style: AppTypography.bodyMediumBold,
-              ),
+              Text('전체 성과 요약', style: AppTypography.bodyMediumBold),
             ],
           ),
           const SizedBox(height: 8),
@@ -279,12 +295,7 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              label,
-              style: AppTypography.bodySmall.copyWith(
-                color: color,
-              ),
-            ),
+            Text(label, style: AppTypography.bodySmall.copyWith(color: color)),
           ],
         ),
       ),

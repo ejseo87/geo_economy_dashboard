@@ -1,5 +1,6 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/country.dart';
 
@@ -58,26 +59,26 @@ class SelectedCountry extends _$SelectedCountry {
 
 /// 선택된 국가 정보를 제공하는 편의 Provider들
 @riverpod
-String selectedCountryCode(SelectedCountryCodeRef ref) {
+String selectedCountryCode(Ref ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.code;
 }
 
 @riverpod
-String selectedCountryName(SelectedCountryNameRef ref) {
+String selectedCountryName(Ref ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.nameKo;
 }
 
 @riverpod
-String selectedCountryFlag(SelectedCountryFlagRef ref) {
+String selectedCountryFlag(Ref ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.flagEmoji;
 }
 
 /// 국가가 한국인지 확인하는 Provider
 @riverpod
-bool isKoreaSelected(IsKoreaSelectedRef ref) {
+bool isKoreaSelected(Ref ref) {
   final selectedCountry = ref.watch(selectedCountryProvider);
   return selectedCountry.code == 'KOR';
 }

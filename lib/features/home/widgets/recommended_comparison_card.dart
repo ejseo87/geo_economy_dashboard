@@ -7,7 +7,7 @@ import '../../../constants/typography.dart';
 import '../models/indicator_comparison.dart';
 import '../view_models/comparison_view_model.dart';
 import '../../../common/countries/view_models/selected_country_provider.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../../common/widgets/data_year_badge.dart';
 
 class RecommendedComparisonCard extends ConsumerStatefulWidget {
   const RecommendedComparisonCard({super.key});
@@ -77,12 +77,31 @@ class _RecommendedComparisonCardState extends ConsumerState<RecommendedCompariso
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '🤖 AI 추천 비교',
-                style: AppTypography.heading4.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                children: [
+                  Text(
+                    '🤖 AI 추천 비교',
+                    style: AppTypography.heading4.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final comparisonAsync = ref.watch(comparisonViewModelProvider);
+                      return comparisonAsync.when(
+                        data: (comparison) => DataStatusBadge(
+                          year: comparison.comparisons.isNotEmpty 
+                            ? comparison.comparisons.first.year 
+                            : 2024,
+                        ),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      );
+                    },
+                  ),
+                ],
               ),
               Gaps.v4,
               Consumer(

@@ -86,7 +86,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        appBar: AppBarWidget(showGear: false),
         body: Container(
           padding: EdgeInsets.symmetric(horizontal: Sizes.size20),
           width: MediaQuery.of(context).size.width,

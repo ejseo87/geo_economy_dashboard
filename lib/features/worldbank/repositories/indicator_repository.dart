@@ -46,10 +46,12 @@ class IndicatorRepository {
       AppLogger.debug(
         '[Repository] Fetching from API: $countryCode/$indicatorCodeStr',
       );
+      final currentYear = DateTime.now().year;
+      final endYear = currentYear - 1; // 작년까지의 데이터
       final apiData = await _apiClient.getIndicatorData(
         countryCode: countryCode,
         indicatorCode: indicatorCodeStr,
-        dateRange: '2010:2024', // 최근 15년 데이터
+        dateRange: '2010:$endYear', // 최근 15년 데이터
       );
 
       // 3. 캐시에 저장
@@ -93,7 +95,8 @@ class IndicatorRepository {
     bool forceRefresh = false,
   }) async {
     final indicatorCodeStr = indicatorCode.code;
-    final targetYear = year ?? 2023; // 기본값을 2023으로 설정 // 기본값: 작년
+    final currentYear = DateTime.now().year;
+    final targetYear = year ?? (currentYear - 1); // 기본값을 작년으로 동적 설정
 
     // 1. 캐시된 OECD 통계 확인
     if (!forceRefresh) {
@@ -185,9 +188,10 @@ class IndicatorRepository {
     int? year,
   }) async {
     // 최신 데이터가 있는 년도를 찾기 위해 몇 년도 시도
+    final currentYear = DateTime.now().year;
     final candidateYears = year != null
         ? [year]
-        : [2023, 2022, 2021, 2020]; // 최신부터 역순으로 시도
+        : [currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]; // 작년부터 4년 전까지 시도
     final indicatorCodeStr = indicatorCode.code;
     final targetCountryCode = countryCode ?? 'KOR';
 

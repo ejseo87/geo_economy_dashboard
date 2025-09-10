@@ -5,7 +5,6 @@ import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
 import 'package:geo_economy_dashboard/features/authentication/view_models/login_view_model.dart';
-import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/common/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -188,13 +187,11 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ref.watch(settingsProvider).darkmode;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.background,
-        appBar: AppBarWidget(showGear: false),
         body: Container(
           padding: EdgeInsets.symmetric(horizontal: Sizes.size20),
           width: MediaQuery.of(context).size.width,
