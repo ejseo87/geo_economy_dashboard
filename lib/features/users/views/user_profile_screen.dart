@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
@@ -11,6 +12,7 @@ import '../../../common/widgets/form_button_widget.dart';
 import '../view_models/user_profile_view_model.dart';
 import '../models/user_profile.dart';
 import '../../../common/services/user_permission_service.dart';
+import 'change_password_screen.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   static const String routeName = 'userProfile';
@@ -25,23 +27,15 @@ class UserProfileScreen extends ConsumerStatefulWidget {
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nicknameController = TextEditingController();
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   
   final ImagePicker _imagePicker = ImagePicker();
   bool _isUpdatingProfile = false;
-  bool _isChangingPassword = false;
-  bool _showPasswordFields = false;
   File? _selectedImage;
   String? _lastProfileName;
 
   @override
   void dispose() {
     _nicknameController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -420,95 +414,62 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const FaIcon(
-                      FontAwesomeIcons.lock,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '비밀번호 변경',
-                      style: AppTypography.heading3.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                const FaIcon(
+                  FontAwesomeIcons.lock,
+                  color: AppColors.warning,
+                  size: 20,
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _showPasswordFields = !_showPasswordFields;
-                      if (!_showPasswordFields) {
-                        _currentPasswordController.clear();
-                        _newPasswordController.clear();
-                        _confirmPasswordController.clear();
-                      }
-                    });
-                  },
-                  child: Text(_showPasswordFields ? '취소' : '변경'),
+                const SizedBox(width: 8),
+                Text(
+                  '보안 설정',
+                  style: AppTypography.heading3.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
-            if (_showPasswordFields) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _currentPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '현재 비밀번호',
-                  hintText: '현재 비밀번호를 입력하세요',
-                  prefixIcon: FaIcon(FontAwesomeIcons.lock, size: 16),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.warning.withOpacity(0.3),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '현재 비밀번호를 입력해주세요';
-                  }
-                  return null;
+              ),
+              child: Row(
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.shield,
+                    color: AppColors.warning,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '계정 보안을 위해 정기적으로 비밀번호를 변경하세요.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FormButtonWidget(
+                text: '비밀번호 변경',
+                type: ButtonType.secondary,
+                isValid: true,
+                onPressed: () {
+                  context.pushNamed(ChangePasswordScreen.routeName);
                 },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _newPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '새 비밀번호',
-                  hintText: '새 비밀번호를 입력하세요',
-                  prefixIcon: FaIcon(FontAwesomeIcons.key, size: 16),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '새 비밀번호를 입력해주세요';
-                  }
-                  if (value.length < 6) {
-                    return '비밀번호는 6자 이상이어야 합니다';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '비밀번호 확인',
-                  hintText: '새 비밀번호를 다시 입력하세요',
-                  prefixIcon: FaIcon(FontAwesomeIcons.check, size: 16),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '비밀번호 확인을 입력해주세요';
-                  }
-                  if (value != _newPasswordController.text) {
-                    return '비밀번호가 일치하지 않습니다';
-                  }
-                  return null;
-                },
-              ),
-            ],
+            ),
           ],
         ),
       ),
@@ -529,20 +490,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   onPressed: _updateProfile,
                 ),
         ),
-        if (_showPasswordFields) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: _isChangingPassword
-                ? const Center(child: CircularProgressIndicator())
-                : FormButtonWidget(
-                    text: '비밀번호 변경',
-                    type: ButtonType.secondary,
-                    isValid: true,
-                    onPressed: _changePassword,
-                  ),
-          ),
-        ],
       ],
     );
   }
@@ -675,51 +622,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     }
   }
 
-  Future<void> _changePassword() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isChangingPassword = true;
-    });
-
-    try {
-      await ref.read(userProfileViewModelProvider.notifier).changePassword(
-        _currentPasswordController.text,
-        _newPasswordController.text,
-      );
-
-      if (mounted) {
-        setState(() {
-          _showPasswordFields = false;
-          _currentPasswordController.clear();
-          _newPasswordController.clear();
-          _confirmPasswordController.clear();
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('비밀번호가 성공적으로 변경되었습니다'),
-            backgroundColor: AppColors.accent,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('비밀번호 변경 실패: $e'),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isChangingPassword = false;
-        });
-      }
-    }
-  }
 
   void _upgradeToPremium() {
     ScaffoldMessenger.of(context).showSnackBar(

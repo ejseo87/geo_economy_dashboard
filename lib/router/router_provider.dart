@@ -1,14 +1,16 @@
 import 'package:geo_economy_dashboard/features/authentication/views/login_screen.dart';
 import 'package:geo_economy_dashboard/features/authentication/views/sign_up_screen.dart';
+import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
 import 'package:geo_economy_dashboard/features/home/views/home_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import 'package:geo_economy_dashboard/features/users/views/user_profile_screen.dart';
+import 'package:geo_economy_dashboard/features/users/views/change_password_screen.dart';
+import 'package:geo_economy_dashboard/features/users/view_models/user_profile_view_model.dart';
 import 'package:geo_economy_dashboard/features/indicators/views/indicator_detail_screen.dart';
 import 'package:geo_economy_dashboard/features/search/views/search_screen.dart';
 import 'package:geo_economy_dashboard/features/favorites/views/favorites_screen.dart';
 import 'package:geo_economy_dashboard/common/countries/views/country_detail_screen.dart';
 import 'package:geo_economy_dashboard/features/accessibility/views/accessibility_settings_screen.dart';
-import 'package:geo_economy_dashboard/features/admin/views/admin_login_screen.dart';
 import 'package:geo_economy_dashboard/features/admin/views/admin_dashboard_screen.dart';
 import 'package:geo_economy_dashboard/features/worldbank/models/indicator_codes.dart';
 import 'package:geo_economy_dashboard/common/countries/models/country.dart';
@@ -27,7 +29,51 @@ GoRouter router(Ref ref) {
     initialLocation: "/splash",
     debugLogDiagnostics: true,
     //observers: [GoRouterObserver()],
-    redirect: (context, state) {
+    redirect: (context, state) async {
+      final isLoggedIn = ref.read(isLoggedInProvider);
+      final location = state.uri.toString();
+      
+      print('Router redirect - Location: $location, IsLoggedIn: $isLoggedIn');
+      
+      // 스플래시 화면은 항상 허용
+      if (location.startsWith('/splash')) {
+        return null;
+      }
+      
+      // 로그인/회원가입 화면은 항상 허용
+      if (location.startsWith('/login') || location.startsWith('/signup')) {
+        return null;
+      }
+      
+      // 로그인되지 않은 상태에서 보호된 경로 접근 시 로그인 화면으로 리다이렉트
+      if (!isLoggedIn) {
+        if (location == '/' || 
+            location.startsWith('/settings') || 
+            location.startsWith('/favorites') ||
+            location.startsWith('/profile') ||
+            location.startsWith('/admin')) {
+          return '/login';
+        }
+      }
+      
+      // 관리자 페이지 접근 시 관리자 권한 확인
+      if (location.startsWith('/admin/dashboard')) {
+        if (!isLoggedIn) {
+          return '/login';
+        }
+        
+        // 관리자 권한 확인
+        try {
+          final isAdmin = await ref.read(isAdminUserProvider.future);
+          if (!isAdmin) {
+            return '/'; // 관리자가 아니면 홈으로 리다이렉트
+          }
+        } catch (e) {
+          print('Admin check error: $e');
+          return '/login';
+        }
+      }
+      
       return null;
     },
     routes: [
@@ -155,12 +201,12 @@ GoRouter router(Ref ref) {
         name: UserProfileScreen.routeName,
         builder: (context, state) => const UserProfileScreen(),
       ),
-      // 관리자 라우트
       GoRoute(
-        path: '/admin/login',
-        name: AdminLoginScreen.routeName,
-        builder: (context, state) => const AdminLoginScreen(),
+        path: ChangePasswordScreen.routeURL,
+        name: ChangePasswordScreen.routeName,
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
+      // 관리자 라우트
       GoRoute(
         path: '/admin/dashboard',
         name: AdminDashboardScreen.routeName,

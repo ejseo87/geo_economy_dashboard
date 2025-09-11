@@ -9,6 +9,7 @@ import 'package:geo_economy_dashboard/common/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:geo_economy_dashboard/features/authentication/views/sign_up_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -68,7 +69,7 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onSignUpTap(BuildContext context) {
-    context.pop();
+    context.goNamed(SignUpScreen.routeName);
   }
 
   void _onSocialLogin(String provider) {
@@ -166,11 +167,7 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FaIcon(
-              icon,
-              size: 18,
-              color: textColor,
-            ),
+            FaIcon(icon, size: 18, color: textColor),
             const SizedBox(width: 12),
             Text(
               label,

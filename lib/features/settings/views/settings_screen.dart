@@ -45,7 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = ref.watch(settingsProvider).darkmode;
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF1A1A2E) : AppColors.background,
       appBar: const AppBarWidget(
@@ -65,7 +65,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: '다크 모드',
                 subtitle: isDark ? '어두운 테마 사용 중' : '밝은 테마 사용 중',
                 value: isDark,
-                onChanged: (value) => ref.read(settingsProvider.notifier).setDarkmode(value),
+                onChanged: (value) =>
+                    ref.read(settingsProvider.notifier).setDarkmode(value),
                 isDark: isDark,
               ),
               _buildActionTile(
@@ -85,7 +86,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: '푸시 알림',
                 subtitle: '새로운 데이터 업데이트 알림 받기',
                 value: _notificationsEnabled,
-                onChanged: (value) => setState(() => _notificationsEnabled = value),
+                onChanged: (value) =>
+                    setState(() => _notificationsEnabled = value),
                 isDark: isDark,
               ),
               _buildSwitchTile(
@@ -128,18 +130,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: '캐시 지우기',
                 subtitle: '저장된 데이터 캐시 삭제',
                 onTap: _clearCache,
-                isDark: isDark,
-              ),
-            ],
-          ),
-          _buildSection(
-            title: '관리자',
-            children: [
-              _buildActionTile(
-                icon: FontAwesomeIcons.userShield,
-                title: '관리자 모드',
-                subtitle: '시스템 관리 및 데이터 관리',
-                onTap: () => context.push('/admin/login'),
                 isDark: isDark,
               ),
             ],
@@ -202,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required List<Widget> children,
   }) {
     final isDark = ref.watch(settingsProvider).darkmode;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -242,7 +232,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: (value ? AppColors.primary : AppColors.textSecondary).withValues(alpha: 0.1),
+          color: (value ? AppColors.primary : AppColors.textSecondary)
+              .withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -284,7 +275,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     bool isDestructive = false,
   }) {
     final color = isDestructive ? AppColors.error : AppColors.primary;
-    
+
     return ListTile(
       leading: Container(
         width: 40,
@@ -293,19 +284,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
-          child: FaIcon(
-            icon,
-            color: color,
-            size: 16,
-          ),
-        ),
+        child: Center(child: FaIcon(icon, color: color, size: 16)),
       ),
       title: Text(
         title,
         style: AppTypography.bodyLarge.copyWith(
-          color: isDestructive 
-              ? AppColors.error 
+          color: isDestructive
+              ? AppColors.error
               : (isDark ? Colors.white : AppColors.textPrimary),
           fontWeight: FontWeight.w600,
         ),
@@ -316,7 +301,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           color: isDark ? Colors.white60 : AppColors.textSecondary,
         ),
       ),
-      trailing: showArrow 
+      trailing: showArrow
           ? FaIcon(
               FontAwesomeIcons.chevronRight,
               color: isDark ? Colors.white30 : AppColors.textSecondary,
@@ -330,16 +315,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _exportFavorites() async {
     try {
       final favoritesJson = await FavoritesService.instance.exportFavorites();
-      final fileName = 'geo_dashboard_favorites_${DateTime.now().millisecondsSinceEpoch}.json';
-      
+      final fileName =
+          'geo_dashboard_favorites_${DateTime.now().millisecondsSinceEpoch}.json';
+
       await Share.shareXFiles([
         XFile.fromData(
           Uint8List.fromList(favoritesJson.codeUnits),
           name: fileName,
           mimeType: 'application/json',
-        )
+        ),
       ]);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -435,13 +421,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     const email = 'support@geodashboard.com';
     const subject = 'Geo Dashboard 문의사항';
     const body = '안녕하세요,\n\n문의사항: \n\n---\n앱 버전: 1.0.0';
-    
+
     final uri = Uri(
       scheme: 'mailto',
       path: email,
-      query: 'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
+      query:
+          'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
     );
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -459,7 +446,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showPrivacyPolicy() async {
     const url = 'https://geodashboard.com/privacy';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -477,7 +464,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showTermsOfService() async {
     const url = 'https://geodashboard.com/terms';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {

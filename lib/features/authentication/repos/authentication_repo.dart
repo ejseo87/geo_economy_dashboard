@@ -44,3 +44,19 @@ class AuthenticationRepository {
 }
 
 final authRepo = Provider((ref) => AuthenticationRepository());
+
+// 인증 상태를 추적하는 Stream Provider
+final authStateChangesProvider = StreamProvider<User?>((ref) {
+  final auth = ref.watch(authRepo);
+  return auth._firebaseAuth.authStateChanges();
+});
+
+// 현재 로그인 상태를 확인하는 Provider
+final isLoggedInProvider = Provider<bool>((ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  return authState.when(
+    data: (user) => user != null,
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});

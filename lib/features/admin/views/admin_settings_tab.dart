@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
 import '../../users/view_models/user_profile_view_model.dart';
+import '../../authentication/repos/authentication_repo.dart';
 
 class AdminSettingsTab extends ConsumerWidget {
   const AdminSettingsTab({super.key});
@@ -25,6 +27,8 @@ class AdminSettingsTab extends ConsumerWidget {
           _buildApiSettings(),
           const SizedBox(height: Sizes.size24),
           _buildSecuritySettings(),
+          const SizedBox(height: Sizes.size24),
+          _buildAdminModeExit(context, ref),
         ],
       ),
     );
@@ -490,6 +494,158 @@ class AdminSettingsTab extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildAdminModeExit(BuildContext context, WidgetRef ref) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(Sizes.size16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.rightFromBracket,
+                  color: AppColors.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '관리자 모드',
+                  style: AppTypography.heading3.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Sizes.size16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.triangleExclamation,
+                    color: AppColors.error,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '관리자 모드에서 나가면 일반 사용자 화면으로 이동합니다.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Sizes.size16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _showExitConfirmationDialog(context, ref),
+                icon: const FaIcon(FontAwesomeIcons.rightFromBracket, size: 16),
+                label: const Text('관리자모드에서 나가기'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showExitConfirmationDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.triangleExclamation,
+                color: AppColors.warning,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Text('관리자 모드 종료'),
+            ],
+          ),
+          content: Text(
+            '정말로 관리자 모드에서 나가시겠습니까?\n\n일반 사용자 화면으로 이동하며, 관리자 기능을 사용하려면 다시 로그인해야 합니다.',
+            style: AppTypography.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                '취소',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => _exitAdminMode(dialogContext, ref),
+              icon: const FaIcon(FontAwesomeIcons.rightFromBracket, size: 14),
+              label: const Text('나가기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _exitAdminMode(BuildContext dialogContext, WidgetRef ref) {
+    // 다이얼로그 닫기
+    Navigator.of(dialogContext).pop();
+    
+    // 스낵바로 확인 메시지 표시
+    ScaffoldMessenger.of(dialogContext).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const FaIcon(
+              FontAwesomeIcons.check,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            const Text('관리자 모드에서 나왔습니다.'),
+          ],
+        ),
+        backgroundColor: AppColors.accent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+    
+    // 홈 화면으로 이동
+    dialogContext.go('/');
   }
 
   String _formatDate(DateTime date) {

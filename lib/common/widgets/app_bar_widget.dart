@@ -3,6 +3,9 @@ import 'package:geo_economy_dashboard/constants/gaps.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
 import 'package:geo_economy_dashboard/features/settings/views/settings_screen.dart';
 import 'package:geo_economy_dashboard/features/authentication/views/login_screen.dart';
+import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
+import 'package:geo_economy_dashboard/features/users/views/user_profile_screen.dart';
+import 'package:geo_economy_dashboard/features/users/view_models/user_profile_view_model.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/common/countries/widgets/country_selection_bottom_sheet.dart';
 import 'package:geo_economy_dashboard/common/countries/view_models/selected_country_provider.dart';
@@ -36,6 +39,10 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
     context.pushNamed(LoginScreen.routeName);
   }
 
+  void _onProfileTap(BuildContext context) {
+    context.pushNamed(UserProfileScreen.routeName);
+  }
+
   void _onGlobeTap(BuildContext context, WidgetRef ref) {
     final selectedCountry = ref.read(selectedCountryProvider);
 
@@ -52,6 +59,8 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(settingsProvider).darkmode;
     final selectedCountry = ref.watch(selectedCountryProvider);
+    final isLoggedIn = ref.watch(isLoggedInProvider);
+    final userProfileAsync = ref.watch(userProfileViewModelProvider);
     final surfaceColor = isDark ? const Color(0xFF16213E) : AppColors.white;
 
     return AppBar(
@@ -111,15 +120,7 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
       centerTitle: true,
       actions: [
         if (showNotification) const NotificationButton(),
-        if (showLogin)
-          IconButton(
-            icon: FaIcon(
-              FontAwesomeIcons.user,
-              color: isDark ? Colors.white70 : AppColors.textSecondary,
-              size: 20,
-            ),
-            onPressed: () => _onLoginTap(context),
-          ),
+        if (showLogin) _buildProfileButton(context, isLoggedIn, userProfileAsync, isDark),
         if (showGear)
           IconButton(
             icon: FaIcon(
@@ -130,6 +131,84 @@ class AppBarWidget extends ConsumerWidget implements PreferredSizeWidget {
             onPressed: () => _onGearTap(context),
           ),
       ],
+    );
+  }
+
+  Widget _buildProfileButton(
+    BuildContext context, 
+    bool isLoggedIn, 
+    AsyncValue userProfileAsync,
+    bool isDark,
+  ) {
+    if (!isLoggedIn) {
+      // 로그인되지 않은 경우 로그인 아이콘 표시
+      return IconButton(
+        icon: FaIcon(
+          FontAwesomeIcons.user,
+          color: isDark ? Colors.white70 : AppColors.textSecondary,
+          size: 20,
+        ),
+        onPressed: () => _onLoginTap(context),
+      );
+    }
+
+    // 로그인된 경우 아바타 표시
+    return userProfileAsync.when(
+      loading: () => Container(
+        margin: const EdgeInsets.all(8),
+        width: 32,
+        height: 32,
+        child: const CircularProgressIndicator(strokeWidth: 2),
+      ),
+      error: (error, stack) => IconButton(
+        icon: FaIcon(
+          FontAwesomeIcons.userXmark,
+          color: isDark ? Colors.white70 : AppColors.error,
+          size: 20,
+        ),
+        onPressed: () => _onProfileTap(context),
+      ),
+      data: (profile) {
+        return GestureDetector(
+          onTap: () => _onProfileTap(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark ? Colors.white24 : AppColors.outline,
+                width: 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: profile?.avatarUrl != null
+                  ? Image.network(
+                      profile!.avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.primary,
+                        child: const FaIcon(
+                          FontAwesomeIcons.user,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: AppColors.primary,
+                      child: const FaIcon(
+                        FontAwesomeIcons.user,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 

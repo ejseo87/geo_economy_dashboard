@@ -118,7 +118,6 @@ flutter build web          # Web
 After modifying any files with:
 
 - `@riverpod` annotations
-- `@freezed` classes
 - `@JsonSerializable` classes
 
 Run: `dart run build_runner build --delete-conflicting-outputs`

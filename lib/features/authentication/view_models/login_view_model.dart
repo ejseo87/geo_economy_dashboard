@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
+import 'package:geo_economy_dashboard/features/users/view_models/user_profile_view_model.dart';
 import 'package:geo_economy_dashboard/common/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,7 +50,21 @@ class LoginViewModel extends AsyncNotifier<void> {
       }
     } else {
       if (context.mounted) {
-        context.go("/");
+        // 로그인 성공 후 관리자 권한 확인
+        try {
+          final isAdmin = await ref.read(isAdminUserProvider.future);
+          if (isAdmin) {
+            // 관리자는 관리자 대시보드로 이동
+            context.go("/admin/dashboard");
+          } else {
+            // 일반 사용자는 홈으로 이동
+            context.go("/");
+          }
+        } catch (e) {
+          print('Admin check error during login: $e');
+          // 에러가 발생해도 홈으로 이동
+          context.go("/");
+        }
       }
     }
   }

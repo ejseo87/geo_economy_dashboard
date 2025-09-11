@@ -4,7 +4,6 @@ import 'package:geo_economy_dashboard/features/favorites/services/favorites_serv
 import 'package:geo_economy_dashboard/features/notifications/services/notification_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/services/accessibility_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/view_models/accessibility_view_model.dart';
-import 'package:geo_economy_dashboard/features/admin/services/admin_auth_service.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/settings/repos/settings_repo.dart';
@@ -59,14 +58,6 @@ void main() async {
     AppLogger.info('Accessibility service initialized');
   } catch (e) {
     AppLogger.error('Failed to initialize accessibility service: $e');
-  }
-
-  // 관리자 인증 서비스 초기화
-  try {
-    await AdminAuthService.instance.initialize();
-    AppLogger.info('Admin auth service initialized');
-  } catch (e) {
-    AppLogger.error('Failed to initialize admin auth service: $e');
   }
 
   final preferences = await SharedPreferences.getInstance();
