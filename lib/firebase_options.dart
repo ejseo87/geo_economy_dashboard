@@ -72,4 +72,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'geo-economy-dashboard.firebasestorage.app',
     iosBundleId: 'com.wonder2021.geoEconomyDashboard',
   );
+
 }

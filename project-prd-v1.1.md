@@ -122,7 +122,7 @@ Phase 1. **앱에서 이중 쓰기(간단)**
 
 ## 5.1 Admin 유저 권한
 
-- 로그인한 사용자의 username이 admin이면 관리자 모드로 진입한다.
+- 로그인한 사용자가 admin이면 관리자 모드로 진입한다.
 - 관리자 모드는 4개의 탭으로 구성된 대시보드:
   1.  Overview: 시스템 현황 및 통계
   2.  Data Collection: World Bank API 데이터 수집

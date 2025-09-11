@@ -1,1 +1,47 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"geo-economy-dashboard","appId":"1:900150454579:android:b7265c6bdb9dc335173646","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"geo-economy-dashboard","appId":"1:900150454579:ios:0a3db356b195c7c7173646","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"geo-economy-dashboard","configurations":{"android":"1:900150454579:android:b7265c6bdb9dc335173646","ios":"1:900150454579:ios:0a3db356b195c7c7173646","web":"1:900150454579:web:f13af74c4396982d173646"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "geo-economy-dashboard",
+          "appId": "1:900150454579:android:b7265c6bdb9dc335173646",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "geo-economy-dashboard",
+          "appId": "1:900150454579:ios:0a3db356b195c7c7173646",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "geo-economy-dashboard",
+          "configurations": {
+            "android": "1:900150454579:android:b7265c6bdb9dc335173646",
+            "ios": "1:900150454579:ios:0a3db356b195c7c7173646",
+            "web": "1:900150454579:web:f13af74c4396982d173646"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ],
+      "source": "functions"
+    }
+  ]
+}

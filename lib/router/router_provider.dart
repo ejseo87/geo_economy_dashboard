@@ -151,13 +151,9 @@ GoRouter router(Ref ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: "/profile/:username",
+        path: UserProfileScreen.routeURL,
         name: UserProfileScreen.routeName,
-        builder: (context, state) {
-          final username = state.pathParameters['username']!;
-          final tab = state.uri.queryParameters['tab'] ?? "";
-          return UserProfileScreen(username: username, tab: tab);
-        },
+        builder: (context, state) => const UserProfileScreen(),
       ),
       // 관리자 라우트
       GoRoute(
