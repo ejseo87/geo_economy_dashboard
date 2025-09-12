@@ -1,108 +1,48 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import '../models/indicator_comparison.dart';
-import '../../worldbank/models/indicator_codes.dart';
-import '../../worldbank/repositories/indicator_repository.dart';
+import '../../worldbank/models/core_indicators.dart';
+import '../../worldbank/models/country_indicator.dart';
+import '../../worldbank/services/integrated_data_service.dart';
 
 /// 모든 20개 지표 데이터를 관리하는 서비스
 class AllIndicatorsService {
-  final IndicatorRepository _repository;
+  final IntegratedDataService _dataService;
 
-  AllIndicatorsService({IndicatorRepository? repository})
-      : _repository = repository ?? IndicatorRepository();
+  AllIndicatorsService({IntegratedDataService? dataService})
+      : _dataService = dataService ?? IntegratedDataService();
 
-  /// 핵심 20지표 정의 (PRD 기준)
-  static const List<IndicatorCode> allIndicators = [
-    // 성장/활동 (4개)
-    IndicatorCode.gdpRealGrowth,      // GDP 성장률
-    IndicatorCode.gdpPppPerCapita,    // 1인당 GDP (PPP)
-    IndicatorCode.manufShare,         // 제조업 부가가치 비중
-    IndicatorCode.grossFixedCapital,  // 총고정자본형성
-    
-    // 물가/통화 (2개)
-    IndicatorCode.cpiInflation,       // CPI 인플레이션
-    IndicatorCode.m2Money,            // M2 통화량
-    
-    // 고용/노동 (3개)
-    IndicatorCode.unemployment,       // 실업률
-    IndicatorCode.laborParticipation, // 노동참가율
-    IndicatorCode.employmentRate,     // 고용률
-    
-    // 재정/정부 (3개)
-    IndicatorCode.govExpenditure,     // 정부최종소비지출
-    IndicatorCode.taxRevenue,         // 조세수입
-    IndicatorCode.govDebt,            // 정부부채
-    
-    // 대외/거시건전성 (4개)
-    IndicatorCode.currentAccount,     // 경상수지
-    IndicatorCode.exportsShare,       // 수출 비중
-    IndicatorCode.importsShare,       // 수입 비중
-    IndicatorCode.reservesMonths,     // 외환보유액
-    
-    // 분배/사회 (2개)
-    IndicatorCode.gini,               // 지니계수
-    IndicatorCode.povertyNat,         // 빈곤율
-    
-    // 환경/에너지 (2개)
-    IndicatorCode.co2PerCapita,       // CO₂ 배출
-    IndicatorCode.renewablesShare,    // 재생에너지 비중
-  ];
+  /// 핵심 20지표 정의 (PRD v1.1 기준 - CoreIndicators 사용)
+  static List<CoreIndicator> get allIndicators => CoreIndicators.indicators;
 
-  /// 카테고리별 지표 그룹화
-  static const Map<String, List<IndicatorCode>> indicatorsByCategory = {
-    '성장/활동': [
-      IndicatorCode.gdpRealGrowth,
-      IndicatorCode.gdpPppPerCapita,
-      IndicatorCode.manufShare,
-      IndicatorCode.grossFixedCapital,
-    ],
-    '물가/통화': [
-      IndicatorCode.cpiInflation,
-      IndicatorCode.m2Money,
-    ],
-    '고용/노동': [
-      IndicatorCode.unemployment,
-      IndicatorCode.laborParticipation,
-      IndicatorCode.employmentRate,
-    ],
-    '재정/정부': [
-      IndicatorCode.govExpenditure,
-      IndicatorCode.taxRevenue,
-      IndicatorCode.govDebt,
-    ],
-    '대외/거시건전성': [
-      IndicatorCode.currentAccount,
-      IndicatorCode.exportsShare,
-      IndicatorCode.importsShare,
-      IndicatorCode.reservesMonths,
-    ],
-    '분배/사회': [
-      IndicatorCode.gini,
-      IndicatorCode.povertyNat,
-    ],
-    '환경/에너지': [
-      IndicatorCode.co2PerCapita,
-      IndicatorCode.renewablesShare,
-    ],
-  };
+  /// 카테고리별 지표 그룹화 (PRD v1.1)
+  static Map<CoreIndicatorCategory, List<CoreIndicator>> get indicatorsByCategory {
+    final categoryMap = <CoreIndicatorCategory, List<CoreIndicator>>{};
+    
+    for (final category in CoreIndicatorCategory.values) {
+      categoryMap[category] = CoreIndicators.getIndicatorsByCategory(category);
+    }
+    
+    return categoryMap;
+  }
 
   /// 특정 국가의 모든 지표 데이터 가져오기
-  Future<Map<IndicatorCode, IndicatorComparison?>> getAllIndicatorsForCountry({
+  Future<Map<CoreIndicator, CountryIndicator?>> getAllIndicatorsForCountry({
     required String countryCode,
-    int? year,
+    bool forceRefresh = false,
   }) async {
-    final results = <IndicatorCode, IndicatorComparison?>{};
+    final results = <CoreIndicator, CountryIndicator?>{};
     
     AppLogger.debug('[AllIndicatorsService] Loading all 20 indicators for $countryCode...');
     
     // 병렬로 모든 지표 데이터 가져오기
     final futures = allIndicators.map((indicator) async {
       try {
-        final comparison = await _repository.generateIndicatorComparison(
-          indicatorCode: indicator,
+        final countryIndicator = await _dataService.getCountryIndicator(
           countryCode: countryCode,
-          year: year,
+          indicatorCode: indicator.code,
+          forceRefresh: forceRefresh,
         );
-        return MapEntry(indicator, comparison);
+        return MapEntry(indicator, countryIndicator);
       } catch (e) {
         AppLogger.error('[AllIndicatorsService] Error loading ${indicator.name}: $e');
         return MapEntry(indicator, null);
@@ -121,49 +61,37 @@ class AllIndicatorsService {
     return results;
   }
 
-  /// 카테고리별 지표 데이터 가져오기
-  Future<Map<String, List<IndicatorComparison>>> getIndicatorsByCategory({
+  /// 카테고리별 지표 데이터 가져오기  
+  Future<Map<CoreIndicatorCategory, List<CountryIndicator>>> getIndicatorsByCategory({
     required String countryCode,
-    int? year,
+    bool forceRefresh = false,
   }) async {
-    final allData = await getAllIndicatorsForCountry(
-      countryCode: countryCode, 
-      year: year,
+    AppLogger.debug('[AllIndicatorsService] Loading indicators by category for $countryCode...');
+    
+    // IntegratedDataService의 getCore20Indicators 사용 (이미 카테고리별로 그룹화됨)
+    final categoryResults = await _dataService.getCore20Indicators(
+      countryCode: countryCode,
+      forceRefresh: forceRefresh,
     );
     
-    final categoryResults = <String, List<IndicatorComparison>>{};
-    
-    for (final category in indicatorsByCategory.keys) {
-      final categoryIndicators = indicatorsByCategory[category]!;
-      final categoryData = <IndicatorComparison>[];
-      
-      for (final indicator in categoryIndicators) {
-        final data = allData[indicator];
-        if (data != null) {
-          categoryData.add(data);
-        }
-      }
-      
-      if (categoryData.isNotEmpty) {
-        categoryResults[category] = categoryData;
-      }
-    }
-    
+    AppLogger.debug('[AllIndicatorsService] Loaded ${categoryResults.length} categories');
     return categoryResults;
   }
 
   /// 특정 카테고리의 성과 요약
   Future<CategoryPerformanceSummary> getCategoryPerformance({
     required String countryCode,
-    required String category,
-    int? year,
+    required CoreIndicatorCategory category,
+    bool forceRefresh = false,
   }) async {
-    final indicators = indicatorsByCategory[category];
-    if (indicators == null || indicators.isEmpty) {
-      throw Exception('Unknown category: $category');
+    AppLogger.debug('[AllIndicatorsService] Getting performance for category: ${category.nameKo}');
+    
+    final indicators = CoreIndicators.getIndicatorsByCategory(category);
+    if (indicators.isEmpty) {
+      throw Exception('No indicators found for category: ${category.nameKo}');
     }
 
-    final results = <IndicatorComparison>[];
+    final results = <CountryIndicator>[];
     var excellentCount = 0;
     var goodCount = 0;
     var averageCount = 0;
@@ -171,28 +99,34 @@ class AllIndicatorsService {
 
     for (final indicator in indicators) {
       try {
-        final comparison = await _repository.generateIndicatorComparison(
-          indicatorCode: indicator,
+        final countryIndicator = await _dataService.getCountryIndicator(
           countryCode: countryCode,
-          year: year,
+          indicatorCode: indicator.code,
+          forceRefresh: forceRefresh,
         );
         
-        results.add(comparison);
-        
-        // 성과별 카운트
-        switch (comparison.insight.performance) {
-          case PerformanceLevel.excellent:
-            excellentCount++;
-            break;
-          case PerformanceLevel.good:
-            goodCount++;
-            break;
-          case PerformanceLevel.average:
-            averageCount++;
-            break;
-          case PerformanceLevel.poor:
-            poorCount++;
-            break;
+        if (countryIndicator != null) {
+          results.add(countryIndicator);
+          
+          // OECD 백분위수로 성과 레벨 계산
+          final percentile = countryIndicator.oecdPercentile ?? 50.0;
+          final performance = _getPerformanceFromPercentile(percentile);
+          
+          // 성과별 카운트
+          switch (performance) {
+            case PerformanceLevel.excellent:
+              excellentCount++;
+              break;
+            case PerformanceLevel.good:
+              goodCount++;
+              break;
+            case PerformanceLevel.average:
+              averageCount++;
+              break;
+            case PerformanceLevel.poor:
+              poorCount++;
+              break;
+          }
         }
       } catch (e) {
         AppLogger.error('[AllIndicatorsService] Error loading ${indicator.name}: $e');
@@ -201,7 +135,7 @@ class AllIndicatorsService {
 
     final totalCount = results.length;
     if (totalCount == 0) {
-      throw Exception('No data available for category: $category');
+      throw Exception('No data available for category: ${category.nameKo}');
     }
 
     // 카테고리 전체 성과 계산
@@ -210,7 +144,7 @@ class AllIndicatorsService {
     );
 
     return CategoryPerformanceSummary(
-      category: category,
+      category: category.nameKo,
       indicators: results,
       excellentCount: excellentCount,
       goodCount: goodCount,
@@ -239,35 +173,43 @@ class AllIndicatorsService {
     return PerformanceLevel.average;
   }
 
-  /// 단일 지표 비교 데이터 가져오기
-  Future<IndicatorComparison?> getIndicatorComparison({
+  /// 단일 지표 데이터 가져오기
+  Future<CountryIndicator?> getIndicatorData({
     required String countryCode,
-    required IndicatorCode indicatorCode,
-    int? year,
+    required String indicatorCode,
+    bool forceRefresh = false,
   }) async {
     try {
-      final comparison = await _repository.generateIndicatorComparison(
-        indicatorCode: indicatorCode,
+      final countryIndicator = await _dataService.getCountryIndicator(
         countryCode: countryCode,
-        year: year,
+        indicatorCode: indicatorCode,
+        forceRefresh: forceRefresh,
       );
-      return comparison;
+      return countryIndicator;
     } catch (e) {
-      AppLogger.error('[AllIndicatorsService] Error loading ${indicatorCode.name}: $e');
+      AppLogger.error('[AllIndicatorsService] Error loading $indicatorCode: $e');
       return null;
     }
   }
 
-  /// 리소스 정리
+  /// 백분위수로 성과 레벨 계산
+  PerformanceLevel _getPerformanceFromPercentile(double percentile) {
+    if (percentile >= 75) return PerformanceLevel.excellent;
+    if (percentile >= 50) return PerformanceLevel.good;
+    if (percentile >= 25) return PerformanceLevel.average;
+    return PerformanceLevel.poor;
+  }
+
+  /// 리소스 정리 (IntegratedDataService는 dispose가 필요 없음)
   void dispose() {
-    _repository.dispose();
+    // IntegratedDataService에는 dispose 메서드가 없음
   }
 }
 
 /// 카테고리 성과 요약
 class CategoryPerformanceSummary {
   final String category;
-  final List<IndicatorComparison> indicators;
+  final List<CountryIndicator> indicators;
   final int excellentCount;
   final int goodCount;
   final int averageCount;

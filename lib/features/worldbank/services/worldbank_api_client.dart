@@ -1,248 +1,366 @@
 import 'package:dio/dio.dart';
-import 'package:geo_economy_dashboard/common/logger.dart';
-import '../models/worldbank_response.dart';
-import '../models/indicator_codes.dart';
+import '../models/country_indicator.dart';
+import '../models/indicator_series.dart' show IndicatorDataPoint;
+import '../models/core_indicators.dart';
+import '../../../common/logger.dart';
 
-/// World Bank API 클라이언트
+/// PRD v1.1 World Bank API 클라이언트
+/// 실시간 경제 데이터 수집 및 OECD 통계 계산
 class WorldBankApiClient {
-  static const String baseUrl = 'https://api.worldbank.org/v2';
+  static const String _baseUrl = 'https://api.worldbank.org/v2';
+  static const int _timeoutSeconds = 30;
+  static const int _maxRetries = 3;
   
   final Dio _dio;
+  
+  // OECD 38개국 코드 리스트
+  static const List<String> _oecdCountryCodes = [
+    'AUS', 'AUT', 'BEL', 'CAN', 'CHL', 'COL', 'CZE', 'DNK', 'EST', 'FIN',
+    'FRA', 'DEU', 'GRC', 'HUN', 'ISL', 'IRL', 'ISR', 'ITA', 'JPN', 'KOR',
+    'LVA', 'LTU', 'LUX', 'MEX', 'NLD', 'NZL', 'NOR', 'POL', 'PRT', 'SVK',
+    'SVN', 'ESP', 'SWE', 'CHE', 'TUR', 'GBR', 'USA', 'CRI'
+  ];
 
-  WorldBankApiClient({Dio? dio}) : _dio = dio ?? _createDefaultDio();
+  WorldBankApiClient({Dio? dio}) : _dio = dio ?? _createDio();
 
-  static Dio _createDefaultDio() {
+  static Dio _createDio() {
     final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 10),
+      baseUrl: _baseUrl,
+      connectTimeout: Duration(seconds: _timeoutSeconds),
+      receiveTimeout: Duration(seconds: _timeoutSeconds),
       headers: {
-        'Accept': 'application/json',
         'User-Agent': 'GeoEconomyDashboard/1.0',
       },
     ));
 
-    // 로깅 인터셉터 추가 (디버그 모드에서만)
     dio.interceptors.add(LogInterceptor(
       requestBody: false,
       responseBody: false,
-      requestHeader: false,
-      responseHeader: false,
-      error: true,
-      logPrint: (obj) => AppLogger.debug('[WorldBank API] $obj'),
-    ));
-
-    // 에러 처리 인터셉터
-    dio.interceptors.add(InterceptorsWrapper(
-      onError: (error, handler) {
-        AppLogger.error('[WorldBank API Error] ${error.message}');
-        handler.next(error);
-      },
+      logPrint: (obj) => AppLogger.debug('[WorldBankAPI] $obj'),
     ));
 
     return dio;
   }
 
-  /// 특정 국가의 지표 데이터 조회
-  /// 
-  /// [countryCode] ISO3 국가 코드 (예: 'KOR', 'USA')
-  /// [indicatorCode] 지표 코드 (예: 'NY.GDP.MKTP.KD.ZG')
-  /// [dateRange] 날짜 범위 (예: '2018:2023', '2020')
-  /// [perPage] 페이지당 결과 수 (기본값: 100)
-  Future<List<WorldBankIndicatorData>> getIndicatorData({
+  /// 특정 국가의 지표 데이터 가져오기 (최근 10년)
+  Future<CountryIndicator?> getCountryIndicator({
     required String countryCode,
     required String indicatorCode,
-    String? dateRange,
-    int perPage = 100,
+    int startYear = 2014,
+    int? endYear,
   }) async {
     try {
-      final path = '/country/$countryCode/indicator/$indicatorCode';
-      final queryParams = {
-        'format': 'json',
-        'per_page': perPage.toString(),
-        if (dateRange != null) 'date': dateRange,
-      };
-
-      final response = await _dio.get(path, queryParameters: queryParams);
+      final currentYear = DateTime.now().year;
+      final actualEndYear = endYear ?? currentYear;
       
+      AppLogger.debug('[WorldBankAPI] Fetching $countryCode:$indicatorCode for $startYear-$actualEndYear');
+      
+      final response = await _retryRequest(() async {
+        return await _dio.get(
+          '/country/$countryCode/indicator/$indicatorCode',
+          queryParameters: {
+            'format': 'json',
+            'date': '$startYear:$actualEndYear',
+            'per_page': 100,
+            'page': 1,
+          },
+        );
+      });
+
       if (response.data == null || response.data is! List) {
-        throw WorldBankApiException('Invalid response format');
+        AppLogger.warning('[WorldBankAPI] Invalid response format for $countryCode:$indicatorCode');
+        return null;
       }
 
-      final apiResponse = WorldBankApiResponse.fromJson(response.data);
-      return apiResponse.data;
-    } on DioException catch (e) {
-      throw WorldBankApiException.fromDioError(e);
-    } catch (e) {
-      throw WorldBankApiException('Unexpected error: $e');
+      final List<dynamic> responseData = response.data as List<dynamic>;
+      
+      // World Bank API는 첫 번째 요소에 메타데이터, 두 번째 요소에 데이터를 반환
+      if (responseData.length < 2 || responseData[1] is! List) {
+        AppLogger.warning('[WorldBankAPI] No data available for $countryCode:$indicatorCode');
+        return null;
+      }
+
+      final List<dynamic> dataPoints = responseData[1] as List<dynamic>;
+      if (dataPoints.isEmpty) {
+        AppLogger.warning('[WorldBankAPI] Empty data for $countryCode:$indicatorCode');
+        return null;
+      }
+
+      // 데이터 파싱
+      final recentData = <IndicatorDataPoint>[];
+      double? latestValue;
+      int? latestYear;
+
+      for (final point in dataPoints) {
+        if (point is! Map<String, dynamic>) continue;
+        
+        final year = int.tryParse(point['date']?.toString() ?? '');
+        final value = _parseDoubleValue(point['value']);
+        
+        if (year != null && value != null) {
+          recentData.add(IndicatorDataPoint(year: year, value: value));
+          
+          // 가장 최신 데이터 추출
+          if (latestYear == null || year > latestYear) {
+            latestYear = year;
+            latestValue = value;
+          }
+        }
+      }
+
+      if (recentData.isEmpty || latestValue == null || latestYear == null) {
+        AppLogger.warning('[WorldBankAPI] No valid data points for $countryCode:$indicatorCode');
+        return null;
+      }
+
+      // OECD 통계 계산
+      final oecdStats = await _calculateOECDStats(indicatorCode, latestYear);
+      final oecdRanking = await _calculateOECDRanking(
+        indicatorCode, 
+        countryCode, 
+        latestValue, 
+        latestYear,
+      );
+
+      // Core indicator 정보 가져오기
+      final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+      
+      // YoY 변화율 계산
+      final yearOverYearChange = _calculateYearOverYearChange(recentData);
+
+      return CountryIndicator(
+        countryCode: countryCode,
+        indicatorCode: indicatorCode,
+        countryName: dataPoints.first['country']?['value'] ?? '',
+        indicatorName: coreIndicator?.name ?? dataPoints.first['indicator']?['value'] ?? '',
+        unit: coreIndicator?.unit ?? '',
+        latestValue: latestValue,
+        latestYear: latestYear,
+        recentData: recentData..sort((a, b) => a.year.compareTo(b.year)),
+        oecdRanking: oecdRanking?.ranking,
+        oecdPercentile: oecdRanking?.percentile,
+        oecdStats: oecdStats,
+        yearOverYearChange: yearOverYearChange,
+        updatedAt: DateTime.now(),
+        dataBadge: _generateDataBadge(latestYear),
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error('[WorldBankAPI] Error fetching $countryCode:$indicatorCode: $error', stackTrace);
+      return null;
     }
   }
 
-  /// 여러 국가의 동일 지표 데이터 조회 (OECD 비교용)
-  /// 
-  /// [countryCodes] 국가 코드 리스트
-  /// [indicatorCode] 지표 코드
-  /// [year] 특정 연도 (기본값: 최신년도)
-  Future<List<WorldBankIndicatorData>> getMultiCountryIndicatorData({
-    required List<String> countryCodes,
-    required String indicatorCode,
-    String? year,
-    int perPage = 500,
-  }) async {
+  /// 지표별 OECD 38개국 데이터 수집 및 통계 계산
+  Future<OECDStats?> _calculateOECDStats(String indicatorCode, int year) async {
     try {
-      final countryString = countryCodes.join(';');
-      final path = '/country/$countryString/indicator/$indicatorCode';
-      final queryParams = {
-        'format': 'json',
-        'per_page': perPage.toString(),
-        if (year != null) 'date': year,
-        'mrnev': '1', // 가장 최신 값 우선
-      };
-
-      final response = await _dio.get(path, queryParameters: queryParams);
+      AppLogger.debug('[WorldBankAPI] Calculating OECD stats for $indicatorCode:$year');
       
-      if (response.data == null || response.data is! List) {
-        throw WorldBankApiException('Invalid response format');
+      final values = <double>[];
+      
+      // OECD 38개국 데이터 병렬 수집
+      final futures = _oecdCountryCodes.map((countryCode) async {
+        try {
+          final response = await _dio.get(
+            '/country/$countryCode/indicator/$indicatorCode',
+            queryParameters: {
+              'format': 'json',
+              'date': '$year:$year',
+              'per_page': 10,
+            },
+          );
+          
+          if (response.data is List && response.data.length > 1) {
+            final dataPoints = response.data[1] as List<dynamic>;
+            if (dataPoints.isNotEmpty) {
+              final value = _parseDoubleValue(dataPoints.first['value']);
+              if (value != null) return value;
+            }
+          }
+        } catch (e) {
+          // 개별 국가 오류는 무시
+        }
+        return null;
+      });
+      
+      final results = await Future.wait(futures);
+      
+      for (final result in results) {
+        if (result != null) values.add(result);
       }
-
-      final apiResponse = WorldBankApiResponse.fromJson(response.data);
-      return apiResponse.data;
-    } on DioException catch (e) {
-      throw WorldBankApiException.fromDioError(e);
-    } catch (e) {
-      throw WorldBankApiException('Unexpected error: $e');
+      
+      if (values.length < 10) {
+        AppLogger.warning('[WorldBankAPI] Insufficient OECD data for $indicatorCode ($year): ${values.length}/38');
+        return null;
+      }
+      
+      values.sort();
+      
+      final median = _calculateMedian(values);
+      final q1 = _calculatePercentile(values, 0.25);
+      final q3 = _calculatePercentile(values, 0.75);
+      final min = values.first;
+      final max = values.last;
+      final mean = values.reduce((a, b) => a + b) / values.length;
+      
+      AppLogger.debug('[WorldBankAPI] OECD stats calculated: median=$median, n=${values.length}');
+      
+      return OECDStats(
+        median: median,
+        q1: q1,
+        q3: q3,
+        min: min,
+        max: max,
+        mean: mean,
+        totalCountries: values.length,
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error('[WorldBankAPI] Error calculating OECD stats: $error', stackTrace);
+      return null;
     }
   }
 
-  /// OECD 38개국의 특정 지표 데이터 조회
-  Future<List<WorldBankIndicatorData>> getOECDIndicatorData({
-    required String indicatorCode,
-    String? year,
-  }) async {
-    return getMultiCountryIndicatorData(
-      countryCodes: IndicatorCode.oecdCountries,
-      indicatorCode: indicatorCode,
-      year: year,
-    );
-  }
-
-  /// 국가 메타데이터 조회
-  Future<List<WorldBankCountry>> getCountries({
-    List<String>? countryCodes,
-    int perPage = 300,
-  }) async {
+  /// 특정 국가의 OECD 순위 계산
+  Future<({int ranking, double percentile})?> _calculateOECDRanking(
+    String indicatorCode,
+    String countryCode,
+    double countryValue,
+    int year,
+  ) async {
     try {
-      final path = countryCodes != null 
-          ? '/country/${countryCodes.join(';')}'
-          : '/country';
+      final oecdValues = <({String country, double value})>[];
       
-      final queryParams = {
-        'format': 'json',
-        'per_page': perPage.toString(),
-      };
-
-      final response = await _dio.get(path, queryParameters: queryParams);
-      
-      if (response.data == null || response.data is! List || response.data.length < 2) {
-        throw WorldBankApiException('Invalid response format');
+      // OECD 데이터 수집
+      for (final code in _oecdCountryCodes) {
+        try {
+          final response = await _dio.get(
+            '/country/$code/indicator/$indicatorCode',
+            queryParameters: {
+              'format': 'json',
+              'date': '$year:$year',
+              'per_page': 5,
+            },
+          );
+          
+          if (response.data is List && response.data.length > 1) {
+            final dataPoints = response.data[1] as List<dynamic>;
+            if (dataPoints.isNotEmpty) {
+              final value = _parseDoubleValue(dataPoints.first['value']);
+              if (value != null) {
+                oecdValues.add((country: code, value: value));
+              }
+            }
+          }
+        } catch (e) {
+          // 개별 오류 무시
+        }
       }
-
-      final dataList = response.data[1] as List<dynamic>;
-      return dataList
-          .where((item) => item != null)
-          .map((item) => WorldBankCountry.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      throw WorldBankApiException.fromDioError(e);
-    } catch (e) {
-      throw WorldBankApiException('Unexpected error: $e');
-    }
-  }
-
-  /// 지표 메타데이터 조회
-  Future<List<WorldBankIndicatorMeta>> getIndicatorMetadata({
-    List<String>? indicatorCodes,
-    int perPage = 100,
-  }) async {
-    try {
-      final path = indicatorCodes != null 
-          ? '/indicator/${indicatorCodes.join(';')}'
-          : '/indicator';
       
-      final queryParams = {
-        'format': 'json',
-        'per_page': perPage.toString(),
-      };
-
-      final response = await _dio.get(path, queryParameters: queryParams);
-      
-      if (response.data == null || response.data is! List || response.data.length < 2) {
-        throw WorldBankApiException('Invalid response format');
+      if (oecdValues.length < 10) {
+        AppLogger.warning('[WorldBankAPI] Insufficient ranking data: ${oecdValues.length}/38');
+        return null;
       }
-
-      final dataList = response.data[1] as List<dynamic>;
-      return dataList
-          .where((item) => item != null)
-          .map((item) => WorldBankIndicatorMeta.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      throw WorldBankApiException.fromDioError(e);
-    } catch (e) {
-      throw WorldBankApiException('Unexpected error: $e');
+      
+      // Core indicator 방향성 확인
+      final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+      final isPositiveIndicator = coreIndicator?.isPositive ?? true;
+      
+      // 정렬 (높은 값이 좋은 경우 내림차순, 낮은 값이 좋은 경우 오름차순)
+      oecdValues.sort((a, b) => isPositiveIndicator 
+          ? b.value.compareTo(a.value) 
+          : a.value.compareTo(b.value));
+      
+      // 순위 계산
+      int ranking = 1;
+      for (int i = 0; i < oecdValues.length; i++) {
+        if (oecdValues[i].country == countryCode) {
+          ranking = i + 1;
+          break;
+        }
+        // 해당 국가가 OECD에 없는 경우, 값으로 순위 추정
+        if (isPositiveIndicator ? countryValue > oecdValues[i].value : countryValue < oecdValues[i].value) {
+          ranking = i + 1;
+          break;
+        }
+        if (i == oecdValues.length - 1) {
+          ranking = oecdValues.length + 1;
+        }
+      }
+      
+      final percentile = ((oecdValues.length - ranking + 1) / oecdValues.length) * 100;
+      
+      return (ranking: ranking, percentile: percentile);
+    } catch (error, stackTrace) {
+      AppLogger.error('[WorldBankAPI] Error calculating ranking: $error', stackTrace);
+      return null;
     }
   }
 
-  /// 리소스 정리
-  void dispose() {
-    _dio.close();
-  }
-}
-
-/// World Bank API 예외 클래스
-class WorldBankApiException implements Exception {
-  final String message;
-  final int? statusCode;
-  final String? errorCode;
-
-  WorldBankApiException(this.message, {this.statusCode, this.errorCode});
-
-  factory WorldBankApiException.fromDioError(DioException dioError) {
-    String message;
-    int? statusCode = dioError.response?.statusCode;
-
-    switch (dioError.type) {
-      case DioExceptionType.connectionTimeout:
-        message = 'Connection timeout. Please check your internet connection.';
-        break;
-      case DioExceptionType.sendTimeout:
-        message = 'Send timeout. Please try again.';
-        break;
-      case DioExceptionType.receiveTimeout:
-        message = 'Receive timeout. The server is taking too long to respond.';
-        break;
-      case DioExceptionType.badResponse:
-        message = 'Server error ($statusCode). ${dioError.message}';
-        break;
-      case DioExceptionType.cancel:
-        message = 'Request was cancelled.';
-        break;
-      case DioExceptionType.connectionError:
-        message = 'Connection error. Please check your internet connection.';
-        break;
-      case DioExceptionType.unknown:
-      default:
-        message = 'Unknown error occurred: ${dioError.message}';
-        break;
+  /// HTTP 요청 재시도 로직
+  Future<Response<T>> _retryRequest<T>(Future<Response<T>> Function() request) async {
+    int attempts = 0;
+    while (attempts < _maxRetries) {
+      try {
+        return await request();
+      } catch (error) {
+        attempts++;
+        if (attempts >= _maxRetries) rethrow;
+        
+        AppLogger.warning('[WorldBankAPI] Request failed (attempt $attempts), retrying...');
+        await Future.delayed(Duration(seconds: attempts * 2));
+      }
     }
-
-    return WorldBankApiException(
-      message,
-      statusCode: statusCode,
-      errorCode: dioError.type.name,
-    );
+    throw Exception('Max retries exceeded');
   }
 
-  @override
-  String toString() => 'WorldBankApiException: $message';
+  /// 유틸리티 메서드들
+  double? _parseDoubleValue(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  double _calculateMedian(List<double> values) {
+    final sorted = List<double>.from(values)..sort();
+    final n = sorted.length;
+    return n.isOdd 
+        ? sorted[n ~/ 2] 
+        : (sorted[n ~/ 2 - 1] + sorted[n ~/ 2]) / 2;
+  }
+
+  double _calculatePercentile(List<double> values, double percentile) {
+    final sorted = List<double>.from(values)..sort();
+    final index = percentile * (sorted.length - 1);
+    final lower = index.floor();
+    final upper = index.ceil();
+    
+    if (lower == upper) {
+      return sorted[lower];
+    }
+    
+    final weight = index - lower;
+    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  }
+
+  double? _calculateYearOverYearChange(List<IndicatorDataPoint> data) {
+    if (data.length < 2) return null;
+    
+    final sortedData = List<IndicatorDataPoint>.from(data)
+        ..sort((a, b) => b.year.compareTo(a.year)); // 최신순
+    
+    final latest = sortedData.first.value;
+    final previous = sortedData[1].value;
+    
+    if (previous == 0) return null;
+    return ((latest - previous) / previous) * 100;
+  }
+
+  String? _generateDataBadge(int year) {
+    final currentYear = DateTime.now().year;
+    final diff = currentYear - year;
+    
+    if (diff <= 1) return 'Latest';
+    if (diff <= 2) return 'Recent';
+    return 'Outdated';
+  }
 }

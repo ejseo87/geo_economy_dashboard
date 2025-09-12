@@ -6,7 +6,7 @@ part of 'indicator_detail_view_model.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$indicatorDetailHash() => r'91b2fff1160d01156c8cf05673e52004a14aa6e7';
+String _$indicatorDetailHash() => r'fb456e6bbfe3a1a4b35835aa735828e482059d43';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -47,7 +47,7 @@ class IndicatorDetailFamily extends Family<AsyncValue<IndicatorDetail>> {
   /// 지표 상세 정보 프로바이더
   ///
   /// Copied from [indicatorDetail].
-  IndicatorDetailProvider call(IndicatorCode indicatorCode, Country country) {
+  IndicatorDetailProvider call(String indicatorCode, Country country) {
     return IndicatorDetailProvider(indicatorCode, country);
   }
 
@@ -81,7 +81,7 @@ class IndicatorDetailProvider
   /// 지표 상세 정보 프로바이더
   ///
   /// Copied from [indicatorDetail].
-  IndicatorDetailProvider(IndicatorCode indicatorCode, Country country)
+  IndicatorDetailProvider(String indicatorCode, Country country)
     : this._internal(
         (ref) =>
             indicatorDetail(ref as IndicatorDetailRef, indicatorCode, country),
@@ -108,7 +108,7 @@ class IndicatorDetailProvider
     required this.country,
   }) : super.internal();
 
-  final IndicatorCode indicatorCode;
+  final String indicatorCode;
   final Country country;
 
   @override
@@ -156,7 +156,7 @@ class IndicatorDetailProvider
 // ignore: unused_element
 mixin IndicatorDetailRef on AutoDisposeFutureProviderRef<IndicatorDetail> {
   /// The parameter `indicatorCode` of this provider.
-  IndicatorCode get indicatorCode;
+  String get indicatorCode;
 
   /// The parameter `country` of this provider.
   Country get country;
@@ -168,13 +168,12 @@ class _IndicatorDetailProviderElement
   _IndicatorDetailProviderElement(super.provider);
 
   @override
-  IndicatorCode get indicatorCode =>
-      (origin as IndicatorDetailProvider).indicatorCode;
+  String get indicatorCode => (origin as IndicatorDetailProvider).indicatorCode;
   @override
   Country get country => (origin as IndicatorDetailProvider).country;
 }
 
-String _$indicatorMetadataHash() => r'65bada9cfc1a8f721ee587d710cc10313d6800d0';
+String _$indicatorMetadataHash() => r'3d66cd002ba37eaa431a81949150be0803312a5e';
 
 /// 지표 메타데이터 프로바이더
 ///
@@ -194,7 +193,7 @@ class IndicatorMetadataFamily extends Family<IndicatorDetailMetadata> {
   /// 지표 메타데이터 프로바이더
   ///
   /// Copied from [indicatorMetadata].
-  IndicatorMetadataProvider call(IndicatorCode indicatorCode) {
+  IndicatorMetadataProvider call(String indicatorCode) {
     return IndicatorMetadataProvider(indicatorCode);
   }
 
@@ -228,7 +227,7 @@ class IndicatorMetadataProvider
   /// 지표 메타데이터 프로바이더
   ///
   /// Copied from [indicatorMetadata].
-  IndicatorMetadataProvider(IndicatorCode indicatorCode)
+  IndicatorMetadataProvider(String indicatorCode)
     : this._internal(
         (ref) => indicatorMetadata(ref as IndicatorMetadataRef, indicatorCode),
         from: indicatorMetadataProvider,
@@ -252,7 +251,7 @@ class IndicatorMetadataProvider
     required this.indicatorCode,
   }) : super.internal();
 
-  final IndicatorCode indicatorCode;
+  final String indicatorCode;
 
   @override
   Override overrideWith(
@@ -296,7 +295,7 @@ class IndicatorMetadataProvider
 // ignore: unused_element
 mixin IndicatorMetadataRef on AutoDisposeProviderRef<IndicatorDetailMetadata> {
   /// The parameter `indicatorCode` of this provider.
-  IndicatorCode get indicatorCode;
+  String get indicatorCode;
 }
 
 class _IndicatorMetadataProviderElement
@@ -305,11 +304,11 @@ class _IndicatorMetadataProviderElement
   _IndicatorMetadataProviderElement(super.provider);
 
   @override
-  IndicatorCode get indicatorCode =>
+  String get indicatorCode =>
       (origin as IndicatorMetadataProvider).indicatorCode;
 }
 
-String _$bookmarkViewModelHash() => r'f085dbd00db797174d8db45223e4b0a721184713';
+String _$bookmarkViewModelHash() => r'b4f27d32b4d270f209c7909cb9e2be23540633f6';
 
 /// 북마크 관리 뷰모델
 ///
@@ -328,7 +327,7 @@ final bookmarkViewModelProvider =
 
 typedef _$BookmarkViewModel = AutoDisposeNotifier<Set<String>>;
 String _$indicatorComparisonViewModelHash() =>
-    r'bd58f5e68f075c040e59712e164fbb3b8dd85a73';
+    r'0980177bb5ed8afa7c34804e2cceb576b853c362';
 
 /// 지표 비교 뷰모델
 ///
@@ -337,7 +336,7 @@ String _$indicatorComparisonViewModelHash() =>
 final indicatorComparisonViewModelProvider =
     AutoDisposeNotifierProvider<
       IndicatorComparisonViewModel,
-      List<IndicatorCode>
+      List<String>
     >.internal(
       IndicatorComparisonViewModel.new,
       name: r'indicatorComparisonViewModelProvider',
@@ -348,10 +347,9 @@ final indicatorComparisonViewModelProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$IndicatorComparisonViewModel =
-    AutoDisposeNotifier<List<IndicatorCode>>;
+typedef _$IndicatorComparisonViewModel = AutoDisposeNotifier<List<String>>;
 String _$recentIndicatorsViewModelHash() =>
-    r'74a043c93a411e076381dadf1da9d111a2fcd720';
+    r'faeb321c81840a1566bf97b3dc44449cbb464137';
 
 /// 최근 본 지표 뷰모델
 ///

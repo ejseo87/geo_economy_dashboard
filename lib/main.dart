@@ -4,6 +4,7 @@ import 'package:geo_economy_dashboard/features/favorites/services/favorites_serv
 import 'package:geo_economy_dashboard/features/notifications/services/notification_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/services/accessibility_service.dart';
 import 'package:geo_economy_dashboard/features/accessibility/view_models/accessibility_view_model.dart';
+import 'package:geo_economy_dashboard/features/worldbank/providers/database_provider.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/sizes.dart';
 import 'package:geo_economy_dashboard/features/settings/repos/settings_repo.dart';
@@ -80,6 +81,15 @@ class GeoEconomyDashboardApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accessibilitySettings = ref.watch(accessibilityViewModelProvider);
+    
+    // PRD v1.1 - SQLite 데이터베이스 초기화 모니터링
+    ref.listen(databaseManagerProvider, (previous, next) {
+      next.when(
+        loading: () => AppLogger.debug('[App] Initializing database...'),
+        error: (error, _) => AppLogger.error('[App] Database initialization failed: $error'),
+        data: (_) => AppLogger.info('[App] Database initialization completed'),
+      );
+    });
     
     return MaterialApp.router(
       routerConfig: ref.watch(routerProvider),

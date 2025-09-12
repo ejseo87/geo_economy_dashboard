@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-- **Name**: geo_economy_dashboard
-- **Type**: Flutter mobile/web application with Firebase backend
+- **Name**: OECD 38개국 경제지표 (Geo Economy Dashboard)
+- **Type**: Flutter mobile/web application with Firebase backend and World Bank API integration
 - **SDK**: Flutter 3.8.1+
-- **Description**: A Flutter-based geo economy dashboard application with authentication and settings management
+- **Description**: A comprehensive OECD economic indicators dashboard that allows users to compare Korea's economic position with 38 OECD countries through 20 key indicators, featuring real-time data visualization and offline capabilities
 
 ## Development Environment
 
@@ -19,10 +19,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **State Management**: Riverpod with code generation (`riverpod_generator`, `riverpod_annotation`)
 - **Navigation**: GoRouter with authentication guards
-- **Backend**: Firebase (Core, Auth, Firestore, Storage)
+- **Backend**: Firebase (Core, Auth, Firestore, Storage) + World Bank API + SQLite (local caching)
 - **Data Classes**: Freezed for immutable data models and UI states
 - **Code Generation**: build_runner for generating Riverpod and JSON serialization code
-- **UI Design System**: Custom design tokens with consistent color palette and typography
+- **UI Design System**: Custom design tokens following 10s-1min-5min rule with OECD-friendly color palette
+- **Internationalization**: Korean/English (ko/en) support
+- **Accessibility**: WCAG compliance, font scaling, color-blind palette
 
 ### Project Structure
 
@@ -31,27 +33,65 @@ lib/
 ├── common/                 # Shared utilities and widgets
 │   ├── logger.dart        # Centralized logging utility
 │   ├── utils.dart         # Common utility functions
-│   └── widgets/           # Reusable UI components
+│   └── widgets/           # Reusable UI components (cards, buttons, charts)
 ├── constants/             # Design system constants
-│   ├── colors.dart        # Color palette (#0055A4, #00A86B, etc.)
+│   ├── colors.dart        # Color palette (#0055A4, #00A86B, indicator colors)
 │   ├── typography.dart    # Typography system (Noto Sans KR, Roboto)
 │   ├── gaps.dart          # Spacing constants
 │   └── sizes.dart         # Size constants
 ├── features/              # Feature-based architecture
-│   ├── authentication/    # Login/signup with Firebase Auth
-│   ├── home/             # Main dashboard
-│   ├── settings/         # App settings with SharedPreferences
-│   └── users/            # User profile management
+│   ├── authentication/    # Login/signup with Firebase Auth + SNS login
+│   ├── home/             # Main dashboard with 3-tab structure (10s-1min-5min)
+│   ├── search/           # Country/indicator search functionality
+│   ├── countries/        # Country detail view with economic indicators
+│   ├── indicators/       # Indicator detail view with OECD rankings
+│   ├── admin/            # Admin panel (data collection, audit, management)
+│   ├── bookmarks/        # User favorites and sharing functionality
+│   ├── settings/         # App settings, profile management, language
+│   ├── users/            # User profile management with avatar/nickname
+│   └── data/             # Data layer (World Bank API, Firestore, SQLite)
+├── models/               # Data models for indicators, countries, users
+├── services/             # External API services (World Bank, Firebase)
 ├── router/               # GoRouter configuration with auth guards
 └── main.dart            # App entry point with Firebase initialization
 ```
+
+### Core Features Implementation
+
+#### 1. 10s-1min-5min Rule Dashboard
+
+- **10s Tab**: Country summary card with Top 5 indicators and trend badges
+- **1min Tab**: Comparative analysis (Country vs Country OR Indicator vs All Countries)
+- **5min Tab**: Complete 20 indicators with QoQ/YoY change arrows
+
+#### 2. Data Architecture
+
+- **Data Priority**: SQLite (local cache) → Firestore → World Bank API
+- **Firestore Structure**:
+  - `/indicators/{indicatorCode}/series/{countryCode}` (normalized)
+  - `/countries/{countryCode}/indicators/{indicatorCode}` (denormalized for speed)
+- **20 Core Indicators**: GDP growth, unemployment, inflation, etc. (see PRD section 첨부3)
+
+#### 3. Admin Features (role-based access)
+
+- Data collection from World Bank API
+- Firestore audit and cleanup
+- System monitoring and user management
+- Access: Users with `role: admin`
+
+#### 4. User Management
+
+- Guest access (no login required)
+- Firebase Authentication with email/password + SNS login
+- Profile management (avatar in Firebase Storage, nickname)
+- Bookmark and sharing features (login required)
 
 ### State Management Pattern
 
 - **ViewModels**: Use Riverpod providers with `@riverpod` annotation
 - **UI States**: Define with Freezed for immutable state classes
-- **Repositories**: Separate data layer with repository pattern
-- **Controllers**: Business logic layer that updates UI state
+- **Repositories**: Separate data layer with repository pattern for World Bank API, Firestore, SQLite
+- **Controllers**: Business logic layer that handles data synchronization and UI state updates
 
 ## Common Commands
 
@@ -98,20 +138,90 @@ flutter build web          # Web
 - **Widget Structure**: Avoid deep nesting, break into smaller reusable widgets
 - **State**: Use Riverpod for state management
 - **Testing**: Write unit tests for public functions, widget tests for UI
+- **Performance**: Target <2s response time, implement proper caching
 
 ### Design System Usage
 
-- **Colors**: Use `AppColors` constants (primary: #0055A4, accent: #00A86B)
-- **Typography**: Use `AppTypography` styles with appropriate fonts
-- **Buttons**: Use `FormButtonWidget` with `ButtonType.primary` or `ButtonType.secondary`
-- **Cards**: Use `AppCard` component for consistent card styling (12px radius, 16px padding, 2dp shadow)
+#### Colors (Indicator-Based)
 
-## Firebase Configuration
+- **Positive Indicators** (growth=good): Blue (#1E88E5, #90CAF9, #0D47A1)
+- **Negative Indicators** (growth=bad): Red/Orange (#E53935, #FF7043)
+- **Neutral Indicators**: Purple/Teal (#26A69A, #7E57C2)
+- **Missing Data**: Gray (#BDBDBD)
+- **UI Colors**: Primary #0055A4, Accent #00A86B, Warning #FFD700
+
+#### Typography
+
+- **Korean**: Noto Sans KR
+- **English/Numbers**: Roboto
+- **Accessibility**: Font scaling support
+
+#### Components
+
+- **Buttons**: 8px rounded corners, Primary/Secondary variants
+- **Cards**: 12px radius, 16px padding, 2dp shadow
+- **Charts**: Sparklines, bar charts, line charts with OECD ranking context
+
+### Badge System
+
+- **Trend Badges**: ↑↓ with color coding based on indicator type
+- **Percentile Badges**: Top 10% (gold), Q1-Q4 ranking within OECD
+- **Freshness Badges**: Data recency indicators (up to date/stale/outdated)
+
+## Data Integration
+
+### World Bank API
+
+- **Endpoint**: https://api.worldbank.org/v2
+- **Rate Limiting**: Implement proper throttling and retry logic
+- **Data Validation**: Handle missing values and outliers
+- **OECD Countries**: Filter to 38 OECD member countries only
+
+### Firebase Configuration
 
 - Firebase is initialized in `main.dart` with error handling
-- `GoogleService-Info.plist` is configured for iOS
-- `google-services.json` is configured for Android
-- Authentication state is managed through `AuthenticationRepository`
+- Firestore for data storage with dual structure (normalized + denormalized)
+- Firebase Storage for user avatars
+- Authentication state managed through `AuthenticationRepository`
+
+### SQLite Caching
+
+- Local cache for offline functionality
+- Auto-cleanup policy for old data
+- Priority-based data retrieval system
+
+## Admin Panel Requirements
+
+### Access Control
+
+- Admin access for users with `role: admin` field
+- 4-tab dashboard: Overview, Data Collection, Data Management, Settings
+
+### Data Management
+
+- Batch data collection from World Bank API
+- Progress tracking and error handling
+- Firestore audit capabilities
+- Duplicate detection and cleanup
+
+## Internationalization
+
+- Support for Korean (ko) and English (en)
+- Proper text handling for mixed Korean/English content
+- Currency and number formatting based on locale
+
+## Performance Requirements
+
+- **Response Time**: <2 seconds for all operations
+- **Offline Support**: Cache recent data for subway/airplane usage
+- **Memory Management**: Efficient image loading and data pagination
+
+## Security Requirements
+
+- HTTPS mandatory for all communications
+- User data encryption
+- Secure API key management
+- Role-based access control for admin features
 
 ## Code Generation Requirements
 
@@ -119,10 +229,21 @@ After modifying any files with:
 
 - `@riverpod` annotations
 - `@JsonSerializable` classes
+- Freezed models
 
 Run: `dart run build_runner build --delete-conflicting-outputs`
 
-## Known Issues
+## Known Issues & Considerations
 
 - Firebase initialization may fail in some environments (handled gracefully)
 - iOS development requires proper codesign setup (use Apple's codesign, not conda's)
+- World Bank API rate limits require proper throttling implementation
+- Some OECD indicators may have data gaps requiring fallback strategies
+- Admin role assignment needs careful security consideration
+
+## Success Metrics Implementation
+
+- Track user engagement: bookmark creation, sharing, search usage
+- Monitor data freshness and API reliability
+- Measure app performance and crash rates
+- A/B testing framework for UI improvements

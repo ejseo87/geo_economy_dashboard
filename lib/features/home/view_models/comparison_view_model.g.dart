@@ -6,27 +6,28 @@ part of 'comparison_view_model.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$indicatorRepositoryHash() =>
-    r'7712e6ad3db06ee0704d7ac6c1f9f15c13b2b0eb';
+String _$integratedDataServiceHash() =>
+    r'15c4a8ff2bb66271af4029cc467a4c4c80a23930';
 
-/// See also [indicatorRepository].
-@ProviderFor(indicatorRepository)
-final indicatorRepositoryProvider =
-    AutoDisposeProvider<IndicatorRepository>.internal(
-      indicatorRepository,
-      name: r'indicatorRepositoryProvider',
+/// See also [integratedDataService].
+@ProviderFor(integratedDataService)
+final integratedDataServiceProvider =
+    AutoDisposeProvider<IntegratedDataService>.internal(
+      integratedDataService,
+      name: r'integratedDataServiceProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$indicatorRepositoryHash,
+          : _$integratedDataServiceHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef IndicatorRepositoryRef = AutoDisposeProviderRef<IndicatorRepository>;
+typedef IntegratedDataServiceRef =
+    AutoDisposeProviderRef<IntegratedDataService>;
 String _$indicatorComparisonHash() =>
-    r'a139ebf0f4a55a94d21990063632108aa658c85d';
+    r'2c4ff3009b432ede9aee60e7ac5612181c88a255';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -175,7 +176,7 @@ class _IndicatorComparisonProviderElement
 }
 
 String _$comparisonViewModelHash() =>
-    r'15a91743f6be58d3f35e55bf8dcc32d989157f0f';
+    r'0c7ae1845e48f9669e12d63fa2cb2ea5c6211d49';
 
 /// See also [ComparisonViewModel].
 @ProviderFor(ComparisonViewModel)

@@ -6,7 +6,6 @@ import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
 import '../../users/view_models/user_profile_view_model.dart';
-import '../../authentication/repos/authentication_repo.dart';
 
 class AdminSettingsTab extends ConsumerWidget {
   const AdminSettingsTab({super.key});

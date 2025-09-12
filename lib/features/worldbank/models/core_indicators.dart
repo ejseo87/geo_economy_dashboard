@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// PRD v1.1 핵심 20개 지표 정의
 /// World Bank API 코드와 메타데이터
 class CoreIndicators {

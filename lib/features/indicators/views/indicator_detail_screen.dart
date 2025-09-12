@@ -12,7 +12,7 @@ import '../services/indicator_detail_service.dart';
 import '../models/indicator_metadata.dart';
 import '../view_models/indicator_detail_view_model.dart';
 import '../widgets/historical_line_chart.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../worldbank/models/core_indicators.dart';
 import '../../../common/countries/models/country.dart';
 import '../../home/models/sparkline_data.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -23,7 +23,7 @@ import '../../../common/widgets/data_year_badge.dart';
 
 /// 지표 상세 화면
 class IndicatorDetailScreen extends ConsumerWidget {
-  final IndicatorCode indicatorCode;
+  final String indicatorCode;
   final Country country;
   static final GlobalKey _repaintBoundaryKey = GlobalKey();
 
@@ -39,6 +39,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
     bool isBookmarked,
     int? dataYear,
   ) {
+    final coreIndicator = CoreIndicators.findByCode(indicatorCode);
     final definition = IndicatorDefinitionsService.instance.getDefinition(indicatorCode);
     
     return AppBar(
@@ -49,7 +50,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  indicatorCode.name,
+                  coreIndicator?.name ?? indicatorCode,
                   style: AppTypography.heading3.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -121,7 +122,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
     );
     final bookmarks = ref.watch(bookmarkViewModelProvider);
     final isBookmarked = bookmarks.contains(
-      '${indicatorCode.code}_${country.code}',
+      '${indicatorCode}_${country.code}',
     );
 
     return Scaffold(
@@ -1521,8 +1522,10 @@ class IndicatorDetailScreen extends ConsumerWidget {
         ),
       );
 
-      final fileName = '${indicatorCode.name}_${country.nameKo}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final shareTitle = '${country.nameKo}의 ${indicatorCode.name}';
+      final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+      final indicatorName = coreIndicator?.name ?? indicatorCode;
+      final fileName = '${indicatorName}_${country.nameKo}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final shareTitle = '${country.nameKo}의 $indicatorName';
       final shareText = '$shareTitle\n\nGeo Economy Dashboard에서 생성됨';
 
       final success = await ShareService.instance.shareWidgetAsImage(
@@ -1569,9 +1572,11 @@ class IndicatorDetailScreen extends ConsumerWidget {
 
   void _shareAsLink(BuildContext context) {
     // 딥링크 URL 생성
-    final url = 'https://geoeconomy.app/indicators/${indicatorCode.code}/${country.code}';
-    final title = '${country.nameKo}의 ${indicatorCode.name}';
-    final shareText = '$title\n\n📊 ${country.nameKo}의 ${indicatorCode.name} 지표를 확인해보세요.\n\n$url\n\nGeo Economy Dashboard';
+    final url = 'https://geoeconomy.app/indicators/$indicatorCode/${country.code}';
+    final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+    final indicatorName = coreIndicator?.name ?? indicatorCode;
+    final title = '${country.nameKo}의 $indicatorName';
+    final shareText = '$title\n\n📊 ${country.nameKo}의 $indicatorName 지표를 확인해보세요.\n\n$url\n\nGeo Economy Dashboard';
     
     // 링크 공유 옵션 다이얼로그 표시
     showDialog(
@@ -1700,7 +1705,10 @@ class IndicatorDetailScreen extends ConsumerWidget {
       );
 
       // CSV 데이터 생성 (예시 데이터)
-      final csvHeader = '연도,${indicatorCode.name} (${indicatorCode.unit})\n';
+      final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+      final indicatorName = coreIndicator?.name ?? indicatorCode;
+      final indicatorUnit = coreIndicator?.unit ?? '%';
+      final csvHeader = '연도,$indicatorName ($indicatorUnit)\n';
       final csvRows = <String>[];
       
       // 예시 데이터 (실제로는 IndicatorDetail에서 historicalData를 사용)
@@ -1712,8 +1720,8 @@ class IndicatorDetailScreen extends ConsumerWidget {
       }
       
       final csvContent = csvHeader + csvRows.join('\n');
-      final fileName = '${indicatorCode.name}_${country.nameKo}_${DateTime.now().millisecondsSinceEpoch}';
-      final title = '${country.nameKo}의 ${indicatorCode.name} 데이터';
+      final fileName = '${indicatorName}_${country.nameKo}_${DateTime.now().millisecondsSinceEpoch}';
+      final title = '${country.nameKo}의 $indicatorName 데이터';
 
       final success = await ShareService.instance.exportToCsv(
         csvContent: csvContent,
@@ -1760,7 +1768,7 @@ class IndicatorDetailScreen extends ConsumerWidget {
     final bookmarkViewModel = ref.read(bookmarkViewModelProvider.notifier);
     final isCurrentlyBookmarked = ref
         .read(bookmarkViewModelProvider)
-        .contains('${indicatorCode.code}_${country.code}');
+        .contains('${indicatorCode}_${country.code}');
 
     bookmarkViewModel.toggleBookmark(indicatorCode, country.code);
 

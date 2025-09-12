@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/indicators_catalog.dart';
-import '../services/all_indicators_service.dart';
 import '../view_models/all_indicators_view_model.dart';
-import '../models/indicator_comparison.dart';
+import '../../worldbank/models/core_indicators.dart';
+import '../../worldbank/models/country_indicator.dart';
 import 'category_indicators_card.dart';
 import '../../../common/widgets/data_year_badge.dart';
 
@@ -19,7 +19,7 @@ class AllIndicatorsSection extends ConsumerStatefulWidget {
 }
 
 class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
-  String? expandedCategory;
+  CoreIndicatorCategory? expandedCategory;
 
   @override
   void initState() {
@@ -82,12 +82,12 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
                           data: (categoryData) {
                             final firstCategory = categoryData.values.isNotEmpty
                                 ? categoryData.values.first
-                                : <IndicatorComparison>[];
+                                : <CountryIndicator>[];
                             return firstCategory.isNotEmpty
-                                ? DataStatusBadge(
-                                    year: firstCategory.first.year,
+                                ? DataYearBadge(
+                                    year: firstCategory.first.latestYear ?? 2024,
                                   )
-                                : const DataStatusBadge(year: 2024);
+                                : const DataYearBadge(year: 2024);
                           },
                           loading: () => const SizedBox.shrink(),
                           error: (_, __) => const SizedBox.shrink(),
@@ -120,7 +120,7 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
   }
 
   Widget _buildContent(
-    AsyncValue<Map<String, List<IndicatorComparison>>> allIndicatorsAsync,
+    AsyncValue<Map<CoreIndicatorCategory, List<CountryIndicator>>> allIndicatorsAsync,
   ) {
     return allIndicatorsAsync.when(
       loading: () => const Padding(
@@ -185,11 +185,11 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
         return Column(
           children: [
             const Divider(height: 1),
-            ...AllIndicatorsService.indicatorsByCategory.keys.map(
+            ...categoryData.keys.map(
               (category) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: CategoryIndicatorsCard(
-                  category: category,
+                  category: category.nameKo,
                   isExpanded: expandedCategory == category,
                   onToggle: () {
                     setState(() {
@@ -209,7 +209,7 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
     );
   }
 
-  Widget _buildSummary(Map<String, List<IndicatorComparison>> categoryData) {
+  Widget _buildSummary(Map<CoreIndicatorCategory, List<CountryIndicator>> categoryData) {
     var totalIndicators = 0;
     var excellentCount = 0;
     var goodCount = 0;
@@ -219,19 +219,17 @@ class _AllIndicatorsSectionState extends ConsumerState<AllIndicatorsSection> {
     for (final indicators in categoryData.values) {
       for (final indicator in indicators) {
         totalIndicators++;
-        switch (indicator.insight.performance) {
-          case PerformanceLevel.excellent:
-            excellentCount++;
-            break;
-          case PerformanceLevel.good:
-            goodCount++;
-            break;
-          case PerformanceLevel.average:
-            averageCount++;
-            break;
-          case PerformanceLevel.poor:
-            poorCount++;
-            break;
+        
+        // OECD 백분위수로 성과 계산
+        final percentile = indicator.oecdPercentile ?? 50.0;
+        if (percentile >= 75) {
+          excellentCount++;
+        } else if (percentile >= 50) {
+          goodCount++;
+        } else if (percentile >= 25) {
+          averageCount++;
+        } else {
+          poorCount++;
         }
       }
     }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/colors.dart';
 import '../../../../constants/typography.dart';
-import '../../widgets/all_indicators_section.dart';
+import '../../../worldbank/widgets/core_20_indicators_section.dart';
 
 /// 세번째 탭: 핵심 20지표 전체 + QoQ/YoY 변화
 class AllIndicatorsTab extends ConsumerWidget {
@@ -53,8 +53,8 @@ class AllIndicatorsTab extends ConsumerWidget {
           ),
         ),
 
-        // 전체 지표 섹션
-        const SliverToBoxAdapter(child: AllIndicatorsSection()),
+        // PRD v1.1 - 핵심 20개 지표 섹션
+        const SliverToBoxAdapter(child: Core20IndicatorsSection()),
 
         // 데이터 출처 및 업데이트 정보
         SliverToBoxAdapter(

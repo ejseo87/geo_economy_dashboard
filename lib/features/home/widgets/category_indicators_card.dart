@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/performance_colors.dart';
 import '../../../constants/indicators_catalog.dart';
-import '../models/indicator_comparison.dart';
+import '../models/indicator_comparison.dart' show PerformanceLevel;
 import '../view_models/all_indicators_view_model.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../worldbank/models/core_indicators.dart';
+import '../../worldbank/models/country_indicator.dart';
 import '../../../common/countries/view_models/selected_country_provider.dart';
 
 /// 카테고리별 지표 표시 카드
@@ -98,7 +98,8 @@ class CategoryIndicatorsCard extends ConsumerWidget {
 
   Widget _buildCategoryContent(
     BuildContext context,
-    AsyncValue<Map<String, List<IndicatorComparison>>> allIndicatorsAsync,
+    AsyncValue<Map<CoreIndicatorCategory, List<CountryIndicator>>>
+    allIndicatorsAsync,
   ) {
     return allIndicatorsAsync.when(
       loading: () => const Padding(
@@ -113,7 +114,11 @@ class CategoryIndicatorsCard extends ConsumerWidget {
         ),
       ),
       data: (categoryData) {
-        final indicators = categoryData[category] ?? [];
+        // CoreIndicatorCategory enum을 찾아서 해당 카테고리의 지표들 가져오기
+        final categoryEnum = _getCategoryEnumFromString(category);
+        final indicators = categoryEnum != null
+            ? categoryData[categoryEnum] ?? []
+            : <CountryIndicator>[];
 
         if (indicators.isEmpty) {
           return Padding(
@@ -138,10 +143,12 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildIndicatorTile(IndicatorComparison indicator) {
-    final performanceColor = PerformanceColors.getPerformanceColor(
-      indicator.insight.performance,
-    );
+  Widget _buildIndicatorTile(CountryIndicator indicator) {
+    // OECD 백분위수를 기반으로 성과 레벨 계산
+    final percentile = indicator.oecdPercentile ?? 50.0;
+    final performance = _getPerformanceFromPercentile(percentile);
+
+    final performanceColor = PerformanceColors.getPerformanceColor(performance);
 
     return Builder(
       builder: (context) => Consumer(
@@ -160,7 +167,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
             ),
             child: Center(
               child: Text(
-                indicator.selectedCountry.rank.toString(),
+                (indicator.oecdRanking ?? 0).toString(),
                 style: AppTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.bold,
                   color: performanceColor,
@@ -173,7 +180,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${indicator.selectedCountry.value.toStringAsFixed(1)} ${indicator.unit}',
+                '${(indicator.latestValue ?? 0.0).toStringAsFixed(1)} ${indicator.unit}',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -191,7 +198,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  _getPerformanceText(indicator.insight.performance),
+                  _getPerformanceText(performance),
                   style: AppTypography.bodySmall.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -200,7 +207,7 @@ class CategoryIndicatorsCard extends ConsumerWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${indicator.oecdStats.totalCountries}개국 중',
+                '${indicator.oecdStats?.totalCountries ?? 38}개국 중',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 10,
@@ -213,6 +220,35 @@ class CategoryIndicatorsCard extends ConsumerWidget {
     );
   }
 
+  /// 카테고리 문자열을 CoreIndicatorCategory enum으로 변환
+  CoreIndicatorCategory? _getCategoryEnumFromString(String categoryString) {
+    switch (categoryString) {
+      case '성장/활동':
+        return CoreIndicatorCategory.growth;
+      case '고용/노동':
+        return CoreIndicatorCategory.employment;
+      case '물가/통화':
+        return CoreIndicatorCategory.inflation;
+      case '재정/정부':
+        return CoreIndicatorCategory.fiscal;
+      case '대외/거시건전성':
+        return CoreIndicatorCategory.external;
+      case '분배/사회':
+        return CoreIndicatorCategory.social;
+      case '환경/에너지':
+        return CoreIndicatorCategory.environment;
+      default:
+        return null;
+    }
+  }
+
+  /// 백분위수를 성과 레벨로 변환
+  PerformanceLevel _getPerformanceFromPercentile(double percentile) {
+    if (percentile >= 75) return PerformanceLevel.excellent;
+    if (percentile >= 50) return PerformanceLevel.good;
+    if (percentile >= 25) return PerformanceLevel.average;
+    return PerformanceLevel.poor;
+  }
 
   Color _getCategoryColor() {
     switch (category) {
@@ -232,27 +268,6 @@ class CategoryIndicatorsCard extends ConsumerWidget {
         return const Color(0xFF66BB6A); // 연한 초록색
       default:
         return AppColors.primary;
-    }
-  }
-
-  IconData _getCategoryIcon() {
-    switch (category) {
-      case '성장/활동':
-        return FontAwesomeIcons.chartLine;
-      case '고용/노동':
-        return FontAwesomeIcons.users;
-      case '물가/통화':
-        return FontAwesomeIcons.coins;
-      case '재정/정부':
-        return FontAwesomeIcons.landmark;
-      case '대외/거시건전성':
-        return FontAwesomeIcons.globe;
-      case '분배/사회':
-        return FontAwesomeIcons.scaleBalanced;
-      case '환경/에너지':
-        return FontAwesomeIcons.leaf;
-      default:
-        return FontAwesomeIcons.chartBar;
     }
   }
 
@@ -293,24 +308,12 @@ class CategoryIndicatorsCard extends ConsumerWidget {
   void _navigateToIndicatorDetail(
     BuildContext context,
     WidgetRef ref,
-    IndicatorComparison indicator,
+    CountryIndicator indicator,
   ) {
-    // 지표 코드로부터 IndicatorCode enum을 찾기
-    final indicatorCode = _getIndicatorCodeFromString(indicator.indicatorCode);
-    if (indicatorCode == null) return;
-
     // 현재 선택된 국가 정보 가져오기
     final selectedCountry = ref.read(selectedCountryProvider);
 
     // GoRouter를 사용한 네비게이션
-    context.go('/indicator/${indicatorCode.code}/${selectedCountry.code}');
-  }
-
-  IndicatorCode? _getIndicatorCodeFromString(String code) {
-    try {
-      return IndicatorCode.values.firstWhere((ic) => ic.code == code);
-    } catch (e) {
-      return null;
-    }
+    context.go('/indicator/${indicator.indicatorCode}/${selectedCountry.code}');
   }
 }

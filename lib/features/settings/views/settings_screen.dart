@@ -2,7 +2,7 @@ import 'package:geo_economy_dashboard/constants/gaps.dart';
 import 'package:geo_economy_dashboard/constants/colors.dart';
 import 'package:geo_economy_dashboard/constants/typography.dart';
 import 'package:geo_economy_dashboard/features/authentication/repos/authentication_repo.dart';
-import 'package:geo_economy_dashboard/features/authentication/views/sign_up_screen.dart';
+import 'package:geo_economy_dashboard/features/home/views/home_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/features/favorites/services/favorites_service.dart';
 import 'package:geo_economy_dashboard/common/widgets/app_bar_widget.dart';
@@ -493,7 +493,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           CupertinoDialogAction(
             onPressed: () {
               ref.read(authRepo).signOut(context);
-              context.go(SignUpScreen.routeURL);
+              context.go(HomeScreen.routeURL);
             },
             isDestructiveAction: true,
             child: const Text('로그아웃'),

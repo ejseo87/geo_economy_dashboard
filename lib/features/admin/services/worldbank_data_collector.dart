@@ -12,10 +12,44 @@ class WorldBankDataCollector {
 
   /// OECD 국가 코드 목록
   static const List<String> _oecdCountries = [
-    'AUS', 'AUT', 'BEL', 'CAN', 'CHL', 'COL', 'CRI', 'CZE', 'DNK', 'EST',
-    'FIN', 'FRA', 'DEU', 'GRC', 'HUN', 'ISL', 'IRL', 'ISR', 'ITA', 'JPN',
-    'KOR', 'LVA', 'LTU', 'LUX', 'MEX', 'NLD', 'NZL', 'NOR', 'POL', 'PRT',
-    'SVK', 'SVN', 'ESP', 'SWE', 'CHE', 'TUR', 'GBR', 'USA'
+    'AUS',
+    'AUT',
+    'BEL',
+    'CAN',
+    'CHL',
+    'COL',
+    'CRI',
+    'CZE',
+    'DNK',
+    'EST',
+    'FIN',
+    'FRA',
+    'DEU',
+    'GRC',
+    'HUN',
+    'ISL',
+    'IRL',
+    'ISR',
+    'ITA',
+    'JPN',
+    'KOR',
+    'LVA',
+    'LTU',
+    'LUX',
+    'MEX',
+    'NLD',
+    'NZL',
+    'NOR',
+    'POL',
+    'PRT',
+    'SVK',
+    'SVN',
+    'ESP',
+    'SWE',
+    'CHE',
+    'TUR',
+    'GBR',
+    'USA',
   ];
 
   /// 모든 지표 데이터 수집
@@ -59,20 +93,23 @@ class WorldBankDataCollector {
 
       for (final indicator in allIndicators) {
         onProgress?.call('수집 중: ${indicator.name}');
-        
+
         final indicatorResult = await _collectIndicatorData(
           indicator,
           startYear,
           actualEndYear,
         );
-        
+
         results['indicators'][indicator.code] = indicatorResult;
         results['totalProcessed'] = (results['totalProcessed'] as int) + 1;
-        
+
         if (indicatorResult['success'] == true) {
-          results['successfullyProcessed'] = (results['successfullyProcessed'] as int) + 1;
+          results['successfullyProcessed'] =
+              (results['successfullyProcessed'] as int) + 1;
         } else {
-          results['errors'].add('${indicator.name}: ${indicatorResult['error']}');
+          results['errors'].add(
+            '${indicator.name}: ${indicatorResult['error']}',
+          );
         }
 
         // API 호출 제한을 위한 지연
@@ -80,8 +117,9 @@ class WorldBankDataCollector {
       }
 
       results['endTime'] = DateTime.now().toIso8601String();
-      AppLogger.info('[WorldBankDataCollector] Collection completed: ${results['successfullyProcessed']}/${results['totalProcessed']} indicators');
-      
+      AppLogger.info(
+        '[WorldBankDataCollector] Collection completed: ${results['successfullyProcessed']}/${results['totalProcessed']} indicators',
+      );
     } catch (e) {
       results['error'] = e.toString();
       AppLogger.error('[WorldBankDataCollector] Collection failed: $e');
@@ -115,7 +153,8 @@ class WorldBankDataCollector {
 
         if (countryData.isNotEmpty) {
           result['countries'][countryCode] = countryData;
-          result['dataPoints'] = (result['dataPoints'] as int) + countryData.length;
+          result['dataPoints'] =
+              (result['dataPoints'] as int) + countryData.length;
         }
 
         // 각 국가마다 작은 지연
@@ -124,13 +163,16 @@ class WorldBankDataCollector {
 
       // Firestore에 저장
       await _saveIndicatorDataToFirestore(indicator, result['countries']);
-      
-      result['success'] = true;
-      AppLogger.info('[WorldBankDataCollector] ${indicator.name}: ${result['dataPoints']} data points collected');
 
+      result['success'] = true;
+      AppLogger.info(
+        '[WorldBankDataCollector] ${indicator.name}: ${result['dataPoints']} data points collected',
+      );
     } catch (e) {
       result['error'] = e.toString();
-      AppLogger.error('[WorldBankDataCollector] Failed to collect ${indicator.name}: $e');
+      AppLogger.error(
+        '[WorldBankDataCollector] Failed to collect ${indicator.name}: $e',
+      );
     }
 
     return result;
@@ -144,29 +186,34 @@ class WorldBankDataCollector {
     int endYear,
   ) async {
     int retryCount = 0;
-    
+
     while (retryCount < _maxRetries) {
       try {
-        final url = '$_baseUrl/countries/$countryCode/indicators/$indicatorCode'
-                   '?date=$startYear:$endYear&format=json&per_page=1000';
+        final url =
+            '$_baseUrl/countries/$countryCode/indicators/$indicatorCode'
+            '?date=$startYear:$endYear&format=json&per_page=1000';
 
-        final response = await http.get(
-          Uri.parse(url),
-          headers: {'User-Agent': 'GeoEconomyDashboard/1.0'},
-        ).timeout(Duration(seconds: 30));
+        final response = await http
+            .get(
+              Uri.parse(url),
+              headers: {'User-Agent': 'GeoEconomyDashboard/1.0'},
+            )
+            .timeout(Duration(seconds: 30));
 
         if (response.statusCode == 200) {
           final jsonData = jsonDecode(response.body);
-          
+
           if (jsonData is List && jsonData.length > 1) {
             final dataList = jsonData[1] as List;
-            
+
             return dataList
                 .where((item) => item['value'] != null)
-                .map((item) => {
-                  'year': int.parse(item['date']),
-                  'value': (item['value'] as num).toDouble(),
-                })
+                .map(
+                  (item) => {
+                    'year': int.parse(item['date']),
+                    'value': (item['value'] as num).toDouble(),
+                  },
+                )
                 .toList();
           }
         } else if (response.statusCode == 429) {
@@ -177,11 +224,12 @@ class WorldBankDataCollector {
         }
 
         break;
-
       } catch (e) {
         retryCount++;
         if (retryCount >= _maxRetries) {
-          AppLogger.warning('[WorldBankDataCollector] Max retries exceeded for $countryCode/$indicatorCode: $e');
+          AppLogger.warning(
+            '[WorldBankDataCollector] Max retries exceeded for $countryCode/$indicatorCode: $e',
+          );
         } else {
           await Future.delayed(_retryDelay);
         }
@@ -198,31 +246,36 @@ class WorldBankDataCollector {
   ) async {
     try {
       final batch = FirebaseFirestore.instance.batch();
-      final collection = FirebaseFirestore.instance.collection('indicator_data');
+      final collection = FirebaseFirestore.instance.collection(
+        'indicator_data',
+      );
 
       for (final entry in countriesData.entries) {
         final countryCode = entry.key;
         final dataPoints = entry.value as List<Map<String, dynamic>>;
 
         final docRef = collection.doc('${indicator.code}_$countryCode');
-        
+
         final docData = {
           'indicatorCode': indicator.code,
           'indicatorName': indicator.name,
           'countryCode': countryCode,
           'data': dataPoints,
           'lastUpdated': FieldValue.serverTimestamp(),
-          'unit': indicator.unit ?? '',
+          'unit': indicator.unit,
         };
 
         batch.set(docRef, docData, SetOptions(merge: true));
       }
 
       await batch.commit();
-      AppLogger.debug('[WorldBankDataCollector] Saved ${indicator.name} to Firestore');
-
+      AppLogger.debug(
+        '[WorldBankDataCollector] Saved ${indicator.name} to Firestore',
+      );
     } catch (e) {
-      AppLogger.error('[WorldBankDataCollector] Failed to save ${indicator.name}: $e');
+      AppLogger.error(
+        '[WorldBankDataCollector] Failed to save ${indicator.name}: $e',
+      );
       rethrow;
     }
   }
@@ -233,7 +286,7 @@ class WorldBankDataCollector {
     Function(String)? onProgress,
   }) async {
     final targetYear = year ?? DateTime.now().year - 1;
-    
+
     try {
       onProgress?.call('OECD 통계 계산 중...');
 
@@ -246,22 +299,28 @@ class WorldBankDataCollector {
 
       for (final indicator in indicators) {
         onProgress?.call('통계 계산: ${indicator.name}');
-        
+
         await _calculateIndicatorStats(indicator, targetYear);
-        
+
         await Future.delayed(Duration(milliseconds: 200));
       }
 
-      AppLogger.info('[WorldBankDataCollector] OECD stats calculated for year $targetYear');
-
+      AppLogger.info(
+        '[WorldBankDataCollector] OECD stats calculated for year $targetYear',
+      );
     } catch (e) {
-      AppLogger.error('[WorldBankDataCollector] Failed to calculate OECD stats: $e');
+      AppLogger.error(
+        '[WorldBankDataCollector] Failed to calculate OECD stats: $e',
+      );
       rethrow;
     }
   }
 
   /// 개별 지표 통계 계산
-  Future<void> _calculateIndicatorStats(IndicatorCode indicator, int year) async {
+  Future<void> _calculateIndicatorStats(
+    IndicatorCode indicator,
+    int year,
+  ) async {
     try {
       final values = <double>[];
       final countryRankings = <Map<String, dynamic>>[];
@@ -271,12 +330,12 @@ class WorldBankDataCollector {
         final docRef = FirebaseFirestore.instance
             .collection('indicator_data')
             .doc('${indicator.code}_$countryCode');
-            
+
         final doc = await docRef.get();
         if (doc.exists) {
           final data = doc.data()!;
           final dataPoints = data['data'] as List<dynamic>;
-          
+
           for (final point in dataPoints) {
             if (point['year'] == year && point['value'] != null) {
               values.add((point['value'] as num).toDouble());
@@ -295,12 +354,12 @@ class WorldBankDataCollector {
       // 통계 계산
       values.sort();
       final stats = _calculateStatistics(values);
-      
+
       // 순위 계산 (direction 사용)
-      countryRankings.sort((a, b) => 
-        indicator.direction == IndicatorDirection.higher
-          ? (b['value'] as double).compareTo(a['value'] as double)
-          : (a['value'] as double).compareTo(b['value'] as double)
+      countryRankings.sort(
+        (a, b) => indicator.direction == IndicatorDirection.higher
+            ? (b['value'] as double).compareTo(a['value'] as double)
+            : (a['value'] as double).compareTo(b['value'] as double),
       );
 
       for (int i = 0; i < countryRankings.length; i++) {
@@ -321,9 +380,10 @@ class WorldBankDataCollector {
         'totalCountries': values.length,
         'lastUpdated': FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
-      AppLogger.error('[WorldBankDataCollector] Failed to calculate stats for ${indicator.name}: $e');
+      AppLogger.error(
+        '[WorldBankDataCollector] Failed to calculate stats for ${indicator.name}: $e',
+      );
     }
   }
 
@@ -333,15 +393,17 @@ class WorldBankDataCollector {
 
     final sum = values.reduce((a, b) => a + b);
     final mean = sum / values.length;
-    
+
     final sortedValues = List<double>.from(values)..sort();
     final median = sortedValues.length % 2 == 0
-        ? (sortedValues[sortedValues.length ~/ 2 - 1] + sortedValues[sortedValues.length ~/ 2]) / 2
+        ? (sortedValues[sortedValues.length ~/ 2 - 1] +
+                  sortedValues[sortedValues.length ~/ 2]) /
+              2
         : sortedValues[sortedValues.length ~/ 2];
 
     final q1Index = (sortedValues.length * 0.25).floor();
     final q3Index = (sortedValues.length * 0.75).floor();
-    
+
     return {
       'mean': mean,
       'median': median,

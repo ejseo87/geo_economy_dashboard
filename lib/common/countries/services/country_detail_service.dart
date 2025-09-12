@@ -1,5 +1,4 @@
-import '../../../features/worldbank/repositories/indicator_repository.dart';
-import '../../../features/worldbank/models/indicator_codes.dart';
+import '../../../features/worldbank/services/integrated_data_service.dart';
 import '../../logger.dart';
 
 /// 국가 상세 화면용 데이터 서비스
@@ -10,16 +9,16 @@ class CountryDetailService {
 
   static CountryDetailService get instance => _instance;
 
-  final _indicatorRepository = IndicatorRepository();
+  final _dataService = IntegratedDataService();
 
   /// GDP 성장률 히스토리컬 데이터 가져오기 (10년)
   Future<List<GdpDataPoint>> getGdpGrowthHistory(String countryCode) async {
     try {
       AppLogger.info('[CountryDetailService] Loading GDP growth history for $countryCode');
       
-      final indicatorData = await _indicatorRepository.getIndicatorData(
+      final indicatorData = await _dataService.getCountryIndicator(
         countryCode: countryCode,
-        indicatorCode: IndicatorCode.gdpRealGrowth,
+        indicatorCode: 'NY.GDP.MKTP.KD.ZG', // GDP 성장률 코드
         forceRefresh: false,
       );
 
@@ -27,15 +26,16 @@ class CountryDetailService {
       final currentYear = DateTime.now().year;
       final startYear = currentYear - 10; // 10년간 데이터
 
-      // 년도별 데이터 추출
-      for (int year = startYear; year <= currentYear - 1; year++) {
-        final value = indicatorData?.getValueForYear(year);
-        if (value != null && value.isFinite) {
-          dataPoints.add(GdpDataPoint(
-            year: year,
-            value: value,
-            xIndex: year - startYear, // 차트용 인덱스
-          ));
+      // 시계열 데이터에서 년도별 데이터 추출
+      if (indicatorData != null && indicatorData.recentData.isNotEmpty) {
+        for (final dataPoint in indicatorData.recentData) {
+          if (dataPoint.year >= startYear && dataPoint.year <= currentYear - 1) {
+            dataPoints.add(GdpDataPoint(
+              year: dataPoint.year,
+              value: dataPoint.value,
+              xIndex: dataPoint.year - startYear, // 차트용 인덱스
+            ));
+          }
         }
       }
 
@@ -54,9 +54,9 @@ class CountryDetailService {
       AppLogger.info('[CountryDetailService] Loading OECD comparison for $countryCode');
 
       final indicators = [
-        IndicatorCode.gdpRealGrowth,
-        IndicatorCode.unemployment,
-        IndicatorCode.cpiInflation,
+        {'code': 'NY.GDP.MKTP.KD.ZG', 'name': 'GDP 성장률'},
+        {'code': 'SL.UEM.TOTL.ZS', 'name': '실업률'},
+        {'code': 'FP.CPI.TOTL.ZG', 'name': 'CPI 인플레이션'},
       ];
 
       final comparisonData = <OecdComparisonData>[];
@@ -65,24 +65,36 @@ class CountryDetailService {
         final indicator = indicators[i];
         
         try {
-          final comparison = await _indicatorRepository.generateIndicatorComparison(
-            indicatorCode: indicator,
+          final indicatorData = await _dataService.getCountryIndicator(
             countryCode: countryCode,
+            indicatorCode: indicator['code']!,
+            forceRefresh: false,
           );
 
-          comparisonData.add(OecdComparisonData(
-            indicatorName: indicator.name,
-            countryValue: comparison.selectedCountry.value,
-            oecdAverage: comparison.oecdStats.mean,
-            xIndex: i,
-            year: comparison.year,
-          ));
+          if (indicatorData != null) {
+            comparisonData.add(OecdComparisonData(
+              indicatorName: indicator['name']!,
+              countryValue: indicatorData.latestValue ?? 0.0,
+              oecdAverage: indicatorData.oecdStats?.mean ?? 0.0,
+              xIndex: i,
+              year: indicatorData.latestYear ?? DateTime.now().year - 1,
+            ));
+          } else {
+            // 데이터가 없을 때 기본값
+            comparisonData.add(OecdComparisonData(
+              indicatorName: indicator['name']!,
+              countryValue: 0.0,
+              oecdAverage: 0.0,
+              xIndex: i,
+              year: DateTime.now().year - 1,
+            ));
+          }
 
         } catch (error) {
-          AppLogger.warning('[CountryDetailService] Failed to load ${indicator.name}: $error');
+          AppLogger.warning('[CountryDetailService] Failed to load ${indicator['name']}: $error');
           // 데이터 로드 실패 시 기본값 추가
           comparisonData.add(OecdComparisonData(
-            indicatorName: indicator.name,
+            indicatorName: indicator['name']!,
             countryValue: 0.0,
             oecdAverage: 0.0,
             xIndex: i,
@@ -106,35 +118,38 @@ class CountryDetailService {
       AppLogger.info('[CountryDetailService] Loading indicators summary for $countryCode');
 
       final indicators = [
-        IndicatorCode.gdpRealGrowth,
-        IndicatorCode.unemployment,
-        IndicatorCode.cpiInflation,
-        IndicatorCode.currentAccount,
-        IndicatorCode.gdpPppPerCapita,
-        IndicatorCode.employmentRate,
+        {'code': 'NY.GDP.MKTP.KD.ZG', 'name': 'GDP 성장률', 'unit': '%'},
+        {'code': 'SL.UEM.TOTL.ZS', 'name': '실업률', 'unit': '%'},
+        {'code': 'FP.CPI.TOTL.ZG', 'name': 'CPI 인플레이션', 'unit': '%'},
+        {'code': 'BN.CAB.XOKA.GD.ZS', 'name': '경상수지', 'unit': '% of GDP'},
+        {'code': 'NY.GDP.PCAP.PP.CD', 'name': '1인당 GDP (PPP)', 'unit': 'USD'},
+        {'code': 'SL.EMP.TOTL.SP.ZS', 'name': '고용률', 'unit': '%'},
       ];
 
       final summaries = <CountryIndicatorSummary>[];
 
       for (final indicator in indicators) {
         try {
-          final comparison = await _indicatorRepository.generateIndicatorComparison(
-            indicatorCode: indicator,
+          final indicatorData = await _dataService.getCountryIndicator(
             countryCode: countryCode,
+            indicatorCode: indicator['code']!,
+            forceRefresh: false,
           );
 
-          summaries.add(CountryIndicatorSummary(
-            code: indicator.code,
-            name: indicator.name,
-            unit: indicator.unit,
-            value: comparison.selectedCountry.value,
-            rank: comparison.selectedCountry.rank,
-            totalCountries: comparison.oecdStats.totalCountries,
-            year: comparison.year,
-          ));
+          if (indicatorData != null) {
+            summaries.add(CountryIndicatorSummary(
+              code: indicator['code']!,
+              name: indicator['name']!,
+              unit: indicator['unit']!,
+              value: indicatorData.latestValue ?? 0.0,
+              rank: indicatorData.oecdRanking ?? 0,
+              totalCountries: indicatorData.oecdStats?.totalCountries ?? 38,
+              year: indicatorData.latestYear ?? DateTime.now().year - 1,
+            ));
+          }
 
         } catch (error) {
-          AppLogger.warning('[CountryDetailService] Failed to load ${indicator.name}: $error');
+          AppLogger.warning('[CountryDetailService] Failed to load ${indicator['name']}: $error');
         }
       }
 

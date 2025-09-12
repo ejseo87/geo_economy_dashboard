@@ -1,30 +1,35 @@
 import 'dart:math' as math;
 import 'package:geo_economy_dashboard/common/logger.dart';
 import '../models/indicator_metadata.dart';
-import '../../worldbank/models/indicator_codes.dart';
-import '../../worldbank/repositories/indicator_repository.dart';
+import '../../worldbank/models/core_indicators.dart';
+import '../../worldbank/models/country_indicator.dart' as country_indicator;
+import '../../worldbank/services/integrated_data_service.dart';
 import '../../../common/countries/models/country.dart';
 import '../../../common/countries/services/countries_service.dart';
-import '../../home/models/indicator_comparison.dart';
 
 /// 지표 상세 정보 서비스
 class IndicatorDetailService {
-  final IndicatorRepository _repository;
+  final IntegratedDataService _dataService;
 
   IndicatorDetailService({
-    IndicatorRepository? repository,
-  }) : _repository = repository ?? IndicatorRepository();
+    IntegratedDataService? dataService,
+  }) : _dataService = dataService ?? IntegratedDataService();
 
   /// 지표 상세 정보 생성
   Future<IndicatorDetail> getIndicatorDetail({
-    required IndicatorCode indicatorCode,
+    required String indicatorCode,
     required Country country,
     int historyYears = 10,
   }) async {
     try {
-      AppLogger.debug('[IndicatorDetailService] Loading detail for ${indicatorCode.name} in ${country.nameKo}');
+      final indicator = CoreIndicators.findByCode(indicatorCode);
+      if (indicator == null) {
+        throw Exception('Unknown indicator code: $indicatorCode');
+      }
 
-      final detail = await _generateIndicatorDetail(indicatorCode, country, historyYears);
+      AppLogger.debug('[IndicatorDetailService] Loading detail for ${indicator.name} in ${country.nameKo}');
+
+      final detail = await _generateIndicatorDetail(indicator, country, historyYears);
 
       AppLogger.info('[IndicatorDetailService] Generated detail with ${detail.historicalData.length} data points');
       return detail;
@@ -35,44 +40,56 @@ class IndicatorDetailService {
     }
   }
 
-  /// 실제 지표 상세 정보 생성 (기존 로직)
+  /// 실제 지표 상세 정보 생성 (IntegratedDataService 사용)
   Future<IndicatorDetail> _generateIndicatorDetail(
-    IndicatorCode indicatorCode,
+    CoreIndicator coreIndicator,
     Country country,
     int historyYears,
   ) async {
     // 메타데이터 생성
-    final metadata = _getIndicatorMetadata(indicatorCode);
+    final metadata = _getIndicatorMetadata(coreIndicator);
 
-    // 다른 화면들과 동일한 데이터 소스 사용
-    final comparison = await _repository.generateIndicatorComparison(
-      indicatorCode: indicatorCode,
+    // IntegratedDataService를 통해 데이터 가져오기
+    final countryIndicator = await _dataService.getCountryIndicator(
       countryCode: country.code,
+      indicatorCode: coreIndicator.code,
+      forceRefresh: false,
     );
 
-    // 히스토리컬 데이터 수집 (기존 방식 유지)
-    final historicalData = await _getHistoricalData(indicatorCode, country.code, historyYears);
+    if (countryIndicator == null) {
+      throw Exception('No data available for ${coreIndicator.name} in ${country.nameKo}');
+    }
 
-    // comparison 데이터에서 현재값과 순위 가져오기
-    final currentValue = comparison.selectedCountry.value;
-    final currentRank = comparison.selectedCountry.rank;
-    final totalCountries = comparison.oecdStats.totalCountries;
+    // 히스토리컬 데이터는 CountryIndicator의 recentData 사용
+    final historicalData = countryIndicator.recentData.map((point) => 
+      IndicatorDataPoint(
+        year: point.year,
+        value: point.value,
+        isEstimated: point.year >= DateTime.now().year - 1,
+        isProjected: false,
+      )
+    ).toList();
+
+    // 현재값과 순위
+    final currentValue = countryIndicator.latestValue ?? 0.0;
+    final currentRank = countryIndicator.oecdRanking ?? 0;
+    final totalCountries = countryIndicator.oecdStats?.totalCountries ?? 38;
 
     // OECD 통계를 OECDStats 형식으로 변환
     final oecdStats = OECDStats(
-      mean: comparison.oecdStats.mean,
-      median: comparison.oecdStats.median,
-      standardDeviation: _calculateStandardDeviation(comparison.oecdStats),
-      min: comparison.oecdStats.min,
-      max: comparison.oecdStats.max,
-      q1: comparison.oecdStats.q1,
-      q3: comparison.oecdStats.q3,
-      totalCountries: comparison.oecdStats.totalCountries,
-      rankings: _convertToCountryRankings(comparison.oecdStats.countryRankings),
+      mean: countryIndicator.oecdStats?.mean ?? 0.0,
+      median: countryIndicator.oecdStats?.median ?? 0.0,
+      standardDeviation: _calculateStandardDeviation(countryIndicator.oecdStats),
+      min: countryIndicator.oecdStats?.min ?? 0.0,
+      max: countryIndicator.oecdStats?.max ?? 0.0,
+      q1: countryIndicator.oecdStats?.q1 ?? 0.0,
+      q3: countryIndicator.oecdStats?.q3 ?? 0.0,
+      totalCountries: totalCountries,
+      rankings: [], // 실제 랭킹 데이터는 별도 메서드에서 처리
     );
 
     // 트렌드 분석
-    final trendAnalysis = _analyzeTrends(historicalData, metadata.isHigherBetter);
+    final trendAnalysis = _analyzeTrends(historicalData, coreIndicator.isPositive == true);
 
     return IndicatorDetail(
       metadata: metadata,
@@ -85,197 +102,112 @@ class IndicatorDetailService {
       oecdStats: oecdStats,
       trendAnalysis: trendAnalysis,
       lastCalculated: DateTime.now(),
-      dataYear: comparison.year, // 실제 데이터 년도 추가
+      dataYear: countryIndicator.latestYear ?? DateTime.now().year - 1,
     );
   }
 
-
-  /// 메타데이터 생성
-  IndicatorDetailMetadata _getIndicatorMetadata(IndicatorCode indicatorCode) {
-    switch (indicatorCode) {
-      case IndicatorCode.gdpRealGrowth:
-        return IndicatorDetailMetadataFactory.createGDPRealGrowth();
-      case IndicatorCode.unemployment:
-        return IndicatorDetailMetadataFactory.createUnemploymentRate();
-      case IndicatorCode.cpiInflation:
-        return IndicatorDetailMetadataFactory.createInflationCPI();
-      default:
-        return _createGenericMetadata(indicatorCode);
-    }
-  }
-
-  /// 범용 메타데이터 생성
-  IndicatorDetailMetadata _createGenericMetadata(IndicatorCode indicatorCode) {
+  /// 메타데이터 생성 (CoreIndicator 기반)
+  IndicatorDetailMetadata _getIndicatorMetadata(CoreIndicator coreIndicator) {
     return IndicatorDetailMetadata(
-      code: indicatorCode.code,
-      name: indicatorCode.name,
-      nameEn: indicatorCode.name,
-      description: '${indicatorCode.name}에 대한 상세 분석 정보입니다.',
-      unit: indicatorCode.unit,
-      category: _getCategoryForIndicator(indicatorCode),
+      code: coreIndicator.code,
+      name: coreIndicator.name,
+      nameEn: coreIndicator.nameEn,
+      description: coreIndicator.description,
+      unit: coreIndicator.unit,
+      category: coreIndicator.category.nameKo,
       source: DataSourceFactory.worldBank(),
       updateFrequency: UpdateFrequency.yearly,
       methodology: 'World Bank 표준 방법론을 따라 계산됩니다.',
       limitations: '데이터 수집 방법론과 국가별 차이로 인한 제약이 있을 수 있습니다.',
-      relatedIndicators: [],
-      isHigherBetter: _isHigherBetter(indicatorCode),
+      relatedIndicators: _getRelatedIndicators(coreIndicator),
+      isHigherBetter: coreIndicator.isPositive == true,
     );
   }
 
-  /// 히스토리컬 데이터 수집
-  Future<List<IndicatorDataPoint>> _getHistoricalData(
-    IndicatorCode indicatorCode, 
-    String countryCode, 
-    int years
-  ) async {
-    final indicatorData = await _repository.getIndicatorData(
-      countryCode: countryCode,
-      indicatorCode: indicatorCode,
-    );
-
-    if (indicatorData == null) {
-      return [];
-    }
-
-    final currentYear = DateTime.now().year;
-    final startYear = currentYear - years + 1;
-    final dataPoints = <IndicatorDataPoint>[];
-
-    for (int year = startYear; year <= currentYear; year++) {
-      final value = indicatorData.getValueForYear(year);
-      if (value != null && value.isFinite) {
-        dataPoints.add(IndicatorDataPoint(
-          year: year,
-          value: value,
-          isEstimated: year >= currentYear - 1, // 최근 2년은 추정값
-          isProjected: year > currentYear - 1, // 미래 예측값
-        ));
-      }
-    }
-
-    return dataPoints..sort((a, b) => a.year.compareTo(b.year));
+  /// 관련 지표 찾기
+  List<String> _getRelatedIndicators(CoreIndicator coreIndicator) {
+    // 같은 카테고리의 다른 지표들 반환
+    final relatedIndicators = CoreIndicators.getIndicatorsByCategory(coreIndicator.category)
+        .where((indicator) => indicator.code != coreIndicator.code)
+        .map((indicator) => indicator.name)
+        .take(3)
+        .toList();
+    
+    return relatedIndicators;
   }
 
-  /// 표준편차 계산 (Q1, Q3로부터 추정)
-  double _calculateStandardDeviation(OECDStatistics stats) {
+  /// 표준편차 계산 (OECDStats로부터)
+  double _calculateStandardDeviation(country_indicator.OECDStats? stats) {
+    if (stats == null) return 0.0;
+    
     // IQR을 이용한 표준편차 추정: σ ≈ IQR / 1.35
     final iqr = stats.q3 - stats.q1;
     return iqr / 1.35;
   }
 
-  /// CountryRankingData를 CountryRanking으로 변환
-  List<CountryRanking> _convertToCountryRankings(List<CountryRankingData>? rankingData) {
-    if (rankingData == null) return [];
-    
-    return rankingData.map((data) => CountryRanking(
-      countryCode: data.countryCode,
-      countryName: data.countryName,
-      value: data.value,
-      rank: data.rank,
-    )).toList();
-  }
-
-  /// 실제 OECD 순위 데이터 가져오기
+  /// 실제 OECD 순위 데이터 가져오기 (IntegratedDataService 사용)
   Future<List<Map<String, dynamic>>> getRealRankingData({
-    required IndicatorCode indicatorCode,
+    required String indicatorCode,
     required Country currentCountry,
     int maxCountries = 15,
   }) async {
     try {
-      AppLogger.debug('[IndicatorDetailService] Loading real ranking data for ${indicatorCode.name}');
+      AppLogger.debug('[IndicatorDetailService] Loading real ranking data for $indicatorCode');
       
-      // 최근 3년간 데이터가 있는 연도 찾기
-      final currentYear = DateTime.now().year;
-      final candidateYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-      
-      OECDStatistics? oecdStats;
-      int? usedYear;
-      
-      for (final year in candidateYears) {
-        try {
-          oecdStats = await _repository.getOECDStatistics(
-            indicatorCode: indicatorCode,
-            year: year,
-          );
-          if (oecdStats.totalCountries > 0 && 
-              oecdStats.countryRankings != null && 
-              oecdStats.countryRankings!.isNotEmpty) {
-            usedYear = year;
-            break;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-      
-      if (oecdStats?.countryRankings == null || usedYear == null) {
-        AppLogger.warning('[IndicatorDetailService] No ranking data available');
-        return await _getFallbackRankingData(indicatorCode, currentCountry);
-      }
-      
-      // 순위순으로 정렬하고 상위 maxCountries개 선택
-      final rankings = List<CountryRanking>.from(oecdStats!.countryRankings!)
-        ..sort((a, b) => a.rank.compareTo(b.rank));
-      
+      // 현재는 Top 5 OECD 국가들의 데이터를 가져와서 순위 생성
+      final oecdCountries = ['USA', 'DEU', 'JPN', 'GBR', 'FRA', 'KOR', 'ITA', 'CAN', 'AUS', 'ESP'];
       final rankingData = <Map<String, dynamic>>[];
-      int addedCount = 0;
-      bool currentCountryIncluded = false;
       
-      // OECD 국가 정보 가져오기
-      final oecdCountries = CountriesService.instance.countries;
-      final countryMap = {for (var c in oecdCountries) c.code: c};
+      final countriesService = CountriesService.instance;
+      final countryMap = {for (var c in countriesService.countries) c.code: c};
       
-      // 상위 순위부터 추가
-      for (final ranking in rankings) {
-        if (addedCount >= maxCountries && currentCountryIncluded) break;
+      int rank = 1;
+      for (final countryCode in oecdCountries) {
+        if (rank > maxCountries) break;
         
-        final country = countryMap[ranking.countryCode];
+        final country = countryMap[countryCode];
         if (country != null) {
-          rankingData.add({
-            'rank': ranking.rank,
-            'country': country.nameKo,
-            'countryCode': ranking.countryCode,
-            'flag': country.flagEmoji,
-            'value': ranking.value,
-          });
-          
-          if (ranking.countryCode == currentCountry.code) {
-            currentCountryIncluded = true;
+          try {
+            final countryIndicator = await _dataService.getCountryIndicator(
+              countryCode: countryCode,
+              indicatorCode: indicatorCode,
+              forceRefresh: false,
+            );
+            
+            if (countryIndicator != null && countryIndicator.latestValue != null) {
+              rankingData.add({
+                'rank': rank,
+                'country': country.nameKo,
+                'countryCode': countryCode,
+                'flag': country.flagEmoji,
+                'value': countryIndicator.latestValue,
+              });
+              rank++;
+            }
+          } catch (e) {
+            // 개별 국가 데이터 로딩 실패 시 계속 진행
+            AppLogger.debug('[IndicatorDetailService] Failed to load data for $countryCode: $e');
           }
-          
-          addedCount++;
         }
       }
       
-      // 현재 국가가 포함되지 않았고 순위가 있다면 추가
-      if (!currentCountryIncluded) {
-        final currentRanking = rankings.firstWhere(
-          (r) => r.countryCode == currentCountry.code,
-          orElse: () => CountryRanking(
-            countryCode: currentCountry.code,
-            countryName: currentCountry.nameKo,
-            rank: 0,
-            value: 0.0,
-          ),
-        );
+      // 데이터가 있는 경우 실제 값으로 정렬
+      if (rankingData.isNotEmpty && rankingData.any((item) => item['value'] != null)) {
+        final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+        final isHigherBetter = coreIndicator?.isPositive == true;
         
-        if (currentRanking.rank > 0) {
-          final country = countryMap[currentCountry.code];
-          if (country != null) {
-            // 현재 국가를 적절한 위치에 삽입
-            rankingData.add({
-              'rank': currentRanking.rank,
-              'country': country.nameKo,
-              'countryCode': currentCountry.code,
-              'flag': country.flagEmoji,
-              'value': currentRanking.value,
-            });
-          }
+        rankingData.sort((a, b) {
+          final valueA = (a['value'] as double?) ?? 0.0;
+          final valueB = (b['value'] as double?) ?? 0.0;
+          
+          return isHigherBetter ? valueB.compareTo(valueA) : valueA.compareTo(valueB);
+        });
+        
+        // 순위 재계산
+        for (int i = 0; i < rankingData.length; i++) {
+          rankingData[i]['rank'] = i + 1;
         }
       }
-      
-      // 순위순으로 최종 정렬
-      rankingData.sort((a, b) => (a['rank'] as int).compareTo(b['rank'] as int));
       
       AppLogger.info('[IndicatorDetailService] Generated ${rankingData.length} real ranking entries');
       return rankingData;
@@ -287,7 +219,7 @@ class IndicatorDetailService {
   }
   
   /// Fallback 순위 데이터 생성 (실제 데이터가 없을 때)
-  Future<List<Map<String, dynamic>>> _getFallbackRankingData(IndicatorCode indicatorCode, Country currentCountry) async {
+  Future<List<Map<String, dynamic>>> _getFallbackRankingData(String indicatorCode, Country currentCountry) async {
     AppLogger.warning('[IndicatorDetailService] Using fallback ranking data');
     
     try {
@@ -332,93 +264,6 @@ class IndicatorDetailService {
         {'rank': 3, 'country': '일본', 'countryCode': 'JPN', 'flag': '🇯🇵', 'value': 0.0},
         {'rank': 4, 'country': currentCountry.nameKo, 'countryCode': currentCountry.code, 'flag': currentCountry.flagEmoji, 'value': 0.0},
       ];
-    }
-  }
-
-  /// 통계 정보를 사용하여 순위 추정
-  int _calculateRankFromStats(double countryValue, OECDStatistics stats, IndicatorCode indicatorCode) {
-    final isHigherBetter = _isHigherBetter(indicatorCode);
-    final totalCountries = stats.totalCountries;
-    
-    // 백분위수 기반 순위 추정
-    if (isHigherBetter) {
-      // 높을수록 좋은 지표
-      if (countryValue >= stats.max) return 1;
-      if (countryValue >= stats.q3) return (totalCountries * 0.25).round();
-      if (countryValue >= stats.median) return (totalCountries * 0.5).round();
-      if (countryValue >= stats.q1) return (totalCountries * 0.75).round();
-      return totalCountries;
-    } else {
-      // 낮을수록 좋은 지표
-      if (countryValue <= stats.min) return 1;
-      if (countryValue <= stats.q1) return (totalCountries * 0.25).round();
-      if (countryValue <= stats.median) return (totalCountries * 0.5).round();
-      if (countryValue <= stats.q3) return (totalCountries * 0.75).round();
-      return totalCountries;
-    }
-  }
-
-  /// OECD 통계 계산 (개선된 버전)
-  Future<OECDStats> _calculateOECDStats(IndicatorCode indicatorCode) async {
-    try {
-      final currentYear = DateTime.now().year;
-      final candidateYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-      
-      // Enhanced Repository를 사용하여 OECD 통계 가져오기
-      for (final year in candidateYears) {
-        try {
-          final oecdStats = await _repository.getOECDStatistics(
-            indicatorCode: indicatorCode,
-            year: year,
-          );
-          
-          if (oecdStats.totalCountries > 0) {
-            // OECDStatistics를 OECDStats로 변환
-            return OECDStats(
-              median: oecdStats.median,
-              mean: oecdStats.mean,
-              standardDeviation: math.sqrt(((oecdStats.max - oecdStats.min) / 4)), // 근사치
-              q1: oecdStats.q1,
-              q3: oecdStats.q3,
-              min: oecdStats.min,
-              max: oecdStats.max,
-              totalCountries: oecdStats.totalCountries,
-              rankings: _convertToCountryRankings(oecdStats.countryRankings),
-            );
-          }
-        } catch (e) {
-          AppLogger.debug('[IndicatorDetailService] Failed to get OECD stats for year $year: $e');
-          continue;
-        }
-      }
-      
-      // 모든 연도에서 데이터를 찾지 못한 경우 기본값 반환
-      AppLogger.warning('[IndicatorDetailService] No OECD statistics available for any year');
-      return const OECDStats(
-        median: 0,
-        mean: 0,
-        standardDeviation: 0,
-        q1: 0,
-        q3: 0,
-        min: 0,
-        max: 0,
-        totalCountries: 0,
-        rankings: [],
-      );
-      
-    } catch (error) {
-      AppLogger.error('[IndicatorDetailService] Error calculating OECD stats: $error');
-      return const OECDStats(
-        median: 0,
-        mean: 0,
-        standardDeviation: 0,
-        q1: 0,
-        q3: 0,
-        min: 0,
-        max: 0,
-        totalCountries: 0,
-        rankings: [],
-      );
     }
   }
 
@@ -554,64 +399,13 @@ class IndicatorDetailService {
     }
   }
 
-  /// 지표별 카테고리 분류
-  String _getCategoryForIndicator(IndicatorCode indicatorCode) {
-    switch (indicatorCode) {
-      case IndicatorCode.gdpRealGrowth:
-      case IndicatorCode.gdpPppPerCapita:
-      // case IndicatorCode.manufacturing:
-      //   return '성장/활동';
-      case IndicatorCode.unemployment:
-        return '고용/노동';
-      case IndicatorCode.cpiInflation:
-        return '물가/통화';
-      case IndicatorCode.currentAccount:
-        return '대외/거시건전성';
-      default:
-        return '기타';
-    }
-  }
-
-  /// 높을수록 좋은 지표인지 판단
-  bool _isHigherBetter(IndicatorCode indicatorCode) {
-    switch (indicatorCode) {
-      case IndicatorCode.gdpRealGrowth:
-      case IndicatorCode.gdpPppPerCapita:
-      // case IndicatorCode.manufacturing:
-      //   return true;
-      case IndicatorCode.unemployment:
-      case IndicatorCode.cpiInflation:
-        return false;
-      case IndicatorCode.currentAccount:
-        return true;
-      default:
-        return true;
-    }
-  }
-
-  /// 국가 이름 반환
-  String _getCountryName(String countryCode) {
-    const countryNames = {
-      'KOR': '한국', 'USA': '미국', 'JPN': '일본', 'DEU': '독일', 'GBR': '영국',
-      'FRA': '프랑스', 'ITA': '이탈리아', 'CAN': '캐나다', 'AUS': '호주', 'ESP': '스페인',
-      'NLD': '네덜란드', 'BEL': '벨기에', 'CHE': '스위스', 'AUT': '오스트리아', 'SWE': '스웨덴',
-      'NOR': '노르웨이', 'DNK': '덴마크', 'FIN': '핀란드', 'POL': '폴란드', 'CZE': '체코',
-      'HUN': '헝가리', 'SVK': '슬로바키아', 'SVN': '슬로베니아', 'EST': '에스토니아',
-      'LVA': '라트비아', 'LTU': '리투아니아', 'PRT': '포르투갈', 'GRC': '그리스',
-      'TUR': '튀르키예', 'MEX': '멕시코', 'CHL': '칠레', 'COL': '콜롬비아', 'CRI': '코스타리카',
-      'ISL': '아이슬란드', 'IRL': '아일랜드', 'ISR': '이스라엘', 'LUX': '룩셈부르크',
-      'NZL': '뉴질랜드',
-    };
-    return countryNames[countryCode] ?? countryCode;
-  }
-
   /// 캐시 새로고침
   Future<IndicatorDetail> refreshIndicatorDetail({
-    required IndicatorCode indicatorCode,
+    required String indicatorCode,
     required Country country,
     int historyYears = 10,
   }) async {
-    AppLogger.debug('[IndicatorDetailService] Force refreshing detail for ${indicatorCode.name}');
+    AppLogger.debug('[IndicatorDetailService] Force refreshing detail for $indicatorCode');
     return getIndicatorDetail(
       indicatorCode: indicatorCode,
       country: country,
@@ -621,6 +415,6 @@ class IndicatorDetailService {
 
   /// 리소스 정리
   void dispose() {
-    _repository.dispose();
+    // IntegratedDataService는 dispose가 필요 없음
   }
 }

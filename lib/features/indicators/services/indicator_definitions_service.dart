@@ -1,5 +1,6 @@
 import '../../../common/logger.dart';
 import '../../worldbank/models/indicator_codes.dart';
+import '../../worldbank/models/core_indicators.dart';
 
 /// 지표 정의를 제공하는 서비스
 class IndicatorDefinitionsService {
@@ -76,9 +77,36 @@ class IndicatorDefinitionsService {
   };
 
   /// 지표 정의 조회
-  IndicatorDefinition? getDefinition(IndicatorCode indicatorCode) {
+  IndicatorDefinition? getDefinition(String indicatorCode) {
     try {
-      return _definitions[indicatorCode];
+      // CoreIndicators에서 찾기
+      final coreIndicator = CoreIndicators.findByCode(indicatorCode);
+      if (coreIndicator != null) {
+        return IndicatorDefinition(
+          name: coreIndicator.name,
+          definition: coreIndicator.description,
+          unit: coreIndicator.unit,
+          source: 'World Bank',
+          methodology: 'World Bank 표준 방법론을 따라 계산됩니다.',
+        );
+      }
+      
+      // 기존 IndicatorCode enum에서 찾기 (폴백)
+      try {
+        final legacyIndicator = IndicatorCode.values.firstWhere(
+          (ic) => ic.code == indicatorCode,
+        );
+        return _definitions[legacyIndicator];
+      } catch (e) {
+        // 기본 폴백 정의 생성
+        return IndicatorDefinition(
+          name: indicatorCode,
+          definition: '$indicatorCode에 대한 경제 지표입니다.',
+          unit: '%',
+          source: 'World Bank',
+          methodology: 'World Bank 표준 방법론을 따릅니다.',
+        );
+      }
     } catch (e) {
       AppLogger.error('Failed to get indicator definition for $indicatorCode: $e');
       return null;

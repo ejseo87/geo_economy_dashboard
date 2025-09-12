@@ -1,9 +1,9 @@
 import 'package:geo_economy_dashboard/common/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/indicator_comparison.dart';
 import '../services/all_indicators_service.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../worldbank/models/core_indicators.dart';
+import '../../worldbank/models/country_indicator.dart';
 import '../../../common/countries/view_models/selected_country_provider.dart';
 
 part 'all_indicators_view_model.g.dart';
@@ -11,7 +11,7 @@ part 'all_indicators_view_model.g.dart';
 @riverpod
 class AllIndicatorsViewModel extends _$AllIndicatorsViewModel {
   @override
-  AsyncValue<Map<String, List<IndicatorComparison>>> build() {
+  AsyncValue<Map<CoreIndicatorCategory, List<CountryIndicator>>> build() {
     // 선택된 국가가 변경될 때 자동으로 새로고침
     ref.listen(selectedCountryProvider, (previous, next) {
       if (previous != null && previous.code != next.code) {
@@ -59,7 +59,7 @@ class AllIndicatorsViewModel extends _$AllIndicatorsViewModel {
 @riverpod
 Future<CategoryPerformanceSummary> categoryPerformance(
   Ref ref,
-  String category,
+  CoreIndicatorCategory category,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);
   
@@ -75,24 +75,24 @@ Future<CategoryPerformanceSummary> categoryPerformance(
   }
 }
 
-/// 단일 지표 비교 프로바이더 (개선된 버전)
+/// 단일 지표 데이터 프로바이더 (개선된 버전)
 @riverpod
-Future<IndicatorComparison> singleIndicatorComparison(
+Future<CountryIndicator> singleIndicatorData(
   Ref ref,
-  IndicatorCode indicatorCode,
+  String indicatorCode,
 ) async {
   final selectedCountry = ref.watch(selectedCountryProvider);
   
   final service = AllIndicatorsService();
   try {
-    final comparison = await service.getAllIndicatorsForCountry(
+    final countryIndicator = await service.getIndicatorData(
       countryCode: selectedCountry.code,
+      indicatorCode: indicatorCode,
     );
-    final indicatorComparison = comparison[indicatorCode];
-    if (indicatorComparison == null) {
-      throw Exception('No data available for indicator: ${indicatorCode.name}');
+    if (countryIndicator == null) {
+      throw Exception('No data available for indicator: $indicatorCode');
     }
-    return indicatorComparison;
+    return countryIndicator;
   } finally {
     service.dispose();
   }

@@ -561,12 +561,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen>
   }
 
   void _removeBookmark(BookmarkItem item) {
-    final indicatorCode = IndicatorCode.values.firstWhere(
-      (i) => i.code == item.indicatorCode,
-      orElse: () => IndicatorCode.gdpRealGrowth,
-    );
     ref.read(bookmarkViewModelProvider.notifier).toggleBookmark(
-      indicatorCode,
+      item.indicatorCode,
       item.countryCode,
     );
     ScaffoldMessenger.of(context).showSnackBar(

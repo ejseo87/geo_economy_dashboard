@@ -47,8 +47,7 @@ GoRouter router(Ref ref) {
       
       // 로그인되지 않은 상태에서 보호된 경로 접근 시 로그인 화면으로 리다이렉트
       if (!isLoggedIn) {
-        if (location == '/' || 
-            location.startsWith('/settings') || 
+        if (location.startsWith('/settings') || 
             location.startsWith('/favorites') ||
             location.startsWith('/profile') ||
             location.startsWith('/admin')) {
@@ -99,14 +98,8 @@ GoRouter router(Ref ref) {
                     path: 'indicator/:indicatorCode/:countryCode',
                     name: RouteName.indicatorDetail,
                     builder: (context, state) {
-                      final indicatorCodeStr = state.pathParameters['indicatorCode']!;
+                      final indicatorCode = state.pathParameters['indicatorCode']!;
                       final countryCode = state.pathParameters['countryCode']!;
-                      
-                      // IndicatorCode enum 찾기
-                      final indicatorCode = IndicatorCode.values.firstWhere(
-                        (code) => code.code == indicatorCodeStr,
-                        orElse: () => IndicatorCode.gdpRealGrowth, // 기본값
-                      );
                       
                       // Country 객체 찾기
                       final country = OECDCountries.findByCode(countryCode) ?? 

@@ -3,10 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../constants/colors.dart';
 import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
-import '../../worldbank/models/indicator_codes.dart';
+import '../../worldbank/models/core_indicators.dart';
 
 class HistoricalLineChart extends StatefulWidget {
-  final IndicatorCode indicator;
+  final String indicator;
   final Map<String, List<HistoricalDataPoint>> countryData;
   final String? selectedCountry;
   final Function(String?)? onCountrySelected;
@@ -232,7 +232,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
           ),
           const Spacer(),
           Text(
-            widget.indicator.unit,
+            _getIndicatorUnit(),
             style: AppTypography.caption.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
@@ -305,7 +305,7 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
             final value = touchedSpot.y;
 
             return LineTooltipItem(
-              '${_getCountryName(countryCode)}\n$year년: ${_formatValue(value)}${widget.indicator.unit}',
+              '${_getCountryName(countryCode)}\n$year년: ${_formatValue(value)}${_getIndicatorUnit()}',
               TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -462,6 +462,11 @@ class _HistoricalLineChartState extends State<HistoricalLineChart> {
     } else {
       return value.toStringAsFixed(1);
     }
+  }
+
+  String _getIndicatorUnit() {
+    final coreIndicator = CoreIndicators.findByCode(widget.indicator);
+    return coreIndicator?.unit ?? '%';
   }
 }
 
