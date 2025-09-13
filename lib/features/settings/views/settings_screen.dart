@@ -6,6 +6,8 @@ import 'package:geo_economy_dashboard/features/home/views/home_screen.dart';
 import 'package:geo_economy_dashboard/features/settings/view_models/settings_view_model.dart';
 import 'package:geo_economy_dashboard/features/favorites/services/favorites_service.dart';
 import 'package:geo_economy_dashboard/common/widgets/app_bar_widget.dart';
+import 'package:geo_economy_dashboard/common/services/user_permission_service.dart';
+import 'package:geo_economy_dashboard/features/admin/views/admin_dashboard_screen.dart';
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,16 +32,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _dataUpdateAlerts = true;
   bool _weeklyReports = false;
   final String _appVersion = '1.0.0';
+  bool _isAdmin = false;
+  final UserPermissionService _permissionService = UserPermissionService();
 
   @override
   void initState() {
     super.initState();
     _loadNotificationSettings();
+    _checkAdminPermission();
   }
 
   Future<void> _loadNotificationSettings() async {
     // Load notification settings from service
     // This is a placeholder - implement actual loading from NotificationService
+  }
+
+  Future<void> _checkAdminPermission() async {
+    final isAdmin = await _permissionService.isAdmin();
+    if (mounted) {
+      setState(() {
+        _isAdmin = isAdmin;
+      });
+    }
   }
 
   @override
@@ -168,6 +182,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
+          // 관리자 전용 섹션
+          if (_isAdmin)
+            _buildSection(
+              title: '관리자 모드',
+              children: [
+                _buildActionTile(
+                  icon: FontAwesomeIcons.userShield,
+                  title: '관리자 대시보드',
+                  subtitle: '데이터 수집, 시스템 관리',
+                  onTap: _openAdminDashboard,
+                  isDark: isDark,
+                ),
+              ],
+            ),
           _buildSection(
             title: '계정',
             children: [
@@ -477,6 +505,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     }
+  }
+
+  void _openAdminDashboard() {
+    context.push(AdminDashboardScreen.routeURL);
   }
 
   void _showLogoutDialog() {

@@ -4,16 +4,30 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/colors.dart';
 import '../../../../constants/typography.dart';
 import '../../../worldbank/widgets/country_vs_country_card.dart';
+import '../../../worldbank/widgets/indicator_comparison_card.dart';
+import '../../../worldbank/models/core_indicators.dart';
 import '../../../worldbank/view_models/country_comparison_view_model.dart';
 import '../../../../common/countries/models/country.dart';
 import '../../../../common/countries/view_models/selected_country_provider.dart';
 
-/// 두번째 탭: 1분 규칙 - AI 추천 비교 (1-2개 지표)
-class AIComparisonTab extends ConsumerWidget {
+enum ComparisonMode {
+  countryVsCountry,
+  indicatorComparison,
+}
+
+/// 두번째 탭: 1분 규칙 - 비교 분석 (2가지 모드)
+class AIComparisonTab extends ConsumerStatefulWidget {
   const AIComparisonTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AIComparisonTab> createState() => _AIComparisonTabState();
+}
+
+class _AIComparisonTabState extends ConsumerState<AIComparisonTab> {
+  ComparisonMode _comparisonMode = ComparisonMode.countryVsCountry;
+
+  @override
+  Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
         // 헤더
@@ -38,7 +52,7 @@ class AIComparisonTab extends ConsumerWidget {
                       Icon(Icons.timer, size: 14, color: AppColors.accent),
                       const SizedBox(width: 4),
                       Text(
-                        '1분 규칙: 심화 분석',
+                        '1분 규칙: 비교 분석',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w600,
@@ -47,6 +61,9 @@ class AIComparisonTab extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                // 비교 모드 선택 토글
+                _buildComparisonModeToggle(),
               ],
             ),
           ),
@@ -59,19 +76,23 @@ class AIComparisonTab extends ConsumerWidget {
           ),
         ),
 
-        // 국가간 비교 예시 (한국 vs 독일)
+        // 비교 모드에 따른 콘텐츠 표시
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: CountryVsCountryCard(
-              comparisonCountry: Country(
-                code: 'DEU',
-                name: '독일',
-                nameKo: '독일', 
-                region: 'Europe',
-                flagEmoji: '🇩🇪',
-              ),
-            ),
+            child: _comparisonMode == ComparisonMode.countryVsCountry
+                ? CountryVsCountryCard(
+                    comparisonCountry: Country(
+                      code: 'DEU',
+                      name: '독일',
+                      nameKo: '독일', 
+                      region: 'Europe',
+                      flagEmoji: '🇩🇪',
+                    ),
+                  )
+                : IndicatorComparisonCard(
+                    indicator: CoreIndicators.indicators.first, // 기본값
+                  ),
           ),
         ),
 
@@ -131,6 +152,71 @@ class AIComparisonTab extends ConsumerWidget {
         // 여백
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
+    );
+  }
+
+  Widget _buildComparisonModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildToggleButton(
+              '국가 vs 국가',
+              ComparisonMode.countryVsCountry,
+              Icons.public,
+            ),
+          ),
+          Expanded(
+            child: _buildToggleButton(
+              '지표 비교',
+              ComparisonMode.indicatorComparison,
+              Icons.analytics,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(String title, ComparisonMode mode, IconData icon) {
+    final isSelected = _comparisonMode == mode;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _comparisonMode = mode;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: AppTypography.bodySmall.copyWith(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
