@@ -6,6 +6,7 @@ import '../../../constants/typography.dart';
 import '../../../constants/sizes.dart';
 import '../providers/data_monitoring_provider.dart';
 import '../services/data_monitoring_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RealTimeDataStatusCard extends ConsumerWidget {
   const RealTimeDataStatusCard({super.key});
@@ -118,7 +119,7 @@ class RealTimeDataStatusCard extends ConsumerWidget {
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 2.5,
+          childAspectRatio: 1.5,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           children: [
@@ -229,8 +230,14 @@ class RealTimeDataStatusCard extends ConsumerWidget {
               const Spacer(),
               if (audit.hasLogFile)
                 IconButton(
-                  onPressed: () {
-                    // TODO: CSV 로그 파일 다운로드 구현
+                  onPressed: () async {
+                    final url = audit.logFileUrl!;
+                    final uri = Uri.parse(url);
+                    try {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } catch (_) {
+                      // 무시: 실패 시 별도 안내는 상위 UI 스낵바로 처리할 수 있음
+                    }
                   },
                   icon: const FaIcon(
                     FontAwesomeIcons.download,
@@ -300,19 +307,23 @@ class RealTimeDataStatusCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             value,
             style: AppTypography.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
               color: color,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 4),
           Text(
             title,
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
           ),
         ],
       ),

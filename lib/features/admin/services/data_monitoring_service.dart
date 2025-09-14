@@ -182,16 +182,15 @@ class DataMonitoringService {
       final oneDayAgo = DateTime.now().subtract(const Duration(days: 1));
       final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
 
-      // 최근 1일 내 업데이트된 데이터
+      // series 문서 기준으로 신선도 계산 (collectionGroup)
       final freshData = await _firestore
-          .collection('indicators')
+          .collectionGroup('series')
           .where('lastUpdated', isGreaterThan: Timestamp.fromDate(oneDayAgo))
           .count()
           .get();
 
-      // 1주일 이상 오래된 데이터
       final staleData = await _firestore
-          .collection('indicators')
+          .collectionGroup('series')
           .where('lastUpdated', isLessThan: Timestamp.fromDate(oneWeekAgo))
           .count()
           .get();
@@ -226,7 +225,14 @@ class DataMonitoringService {
 
       final auditDoc = auditSnapshot.docs.first;
       final auditData = auditDoc.data();
-      final metadata = auditData['metadata'] as Map<String, dynamic>? ?? {};
+      // metadata가 과거 형식(List)인 경우도 안전 처리
+      Map<String, dynamic> metadata = {};
+      final rawMeta = auditData['metadata'];
+      if (rawMeta is Map<String, dynamic>) {
+        metadata = rawMeta;
+      } else if (rawMeta is List && rawMeta.isNotEmpty && rawMeta.last is Map<String, dynamic>) {
+        metadata = Map<String, dynamic>.from(rawMeta.last as Map<String, dynamic>);
+      }
 
       return AuditSummaryData(
         auditId: auditDoc.id,

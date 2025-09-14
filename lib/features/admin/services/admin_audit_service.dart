@@ -174,8 +174,9 @@ class AdminAuditService {
         updateData['durationMs'] = duration.inMilliseconds;
       }
 
+      // 기존 arrayUnion 사용을 제거하고, Map 형태로 일관 저장
       if (additionalMetadata != null) {
-        updateData['metadata'] = FieldValue.arrayUnion([additionalMetadata]);
+        updateData['metadata'] = additionalMetadata;
       }
 
       await _firestore

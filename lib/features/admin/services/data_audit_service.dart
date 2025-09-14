@@ -274,13 +274,8 @@ class DataAuditService {
         },
       );
 
-      // 감사 결과를 admin_audit_logs의 하위 컬렉션에 저장
-      if (adminAuditId != null && adminAuditId.isNotEmpty) {
-        await _saveAuditResultToAdminLog(auditResult, adminAuditId);
-      } else {
-        // Fallback: 기존 방식으로 저장
-        await _saveAuditResult(auditResult);
-      }
+      // admin_audit_logs의 metadata에 전체 감사 결과 포함
+      // data_audit_results collection은 더 이상 사용하지 않음
 
       yield '[완료] 데이터 감사가 완료되었습니다.';
       yield '[요약] 총 ${allIssues.length}건의 문제가 발견되었습니다.';
@@ -288,6 +283,7 @@ class DataAuditService {
       // Admin audit log 완료 상태로 업데이트
       if (adminAuditId != null && adminAuditId.isNotEmpty) {
         final metadata = <String, dynamic>{
+          'auditResult': auditResult.toJson(),
           'totalIssues': allIssues.length,
           'duplicates': duplicates.length,
           'orphans': orphans.length,
@@ -311,7 +307,13 @@ class DataAuditService {
           actionType: AdminActionType.systemMaintenance,
           description: '데이터 무결성 감사 완료',
           status: AdminActionStatus.completed,
-          metadata: auditResult.toJson(),
+          metadata: {
+            'auditResult': auditResult.toJson(),
+            'totalIssues': allIssues.length,
+            'duplicates': duplicates.length,
+            'orphans': orphans.length,
+            'totalDocuments': totalDocuments,
+          },
         );
       }
 
@@ -738,71 +740,10 @@ class DataAuditService {
     return true;
   }
 
-  // admin_audit_logs의 하위 컬렉션에 감사 결과 저장
-  Future<void> _saveAuditResultToAdminLog(DataAuditResult result, String adminAuditId) async {
-    try {
-      AppLogger.info('[DataAuditService] Saving audit result to admin log: $adminAuditId');
+  // 더 이상 사용하지 않음 - admin_audit_logs의 metadata에 전체 감사 결과 포함
 
-      // 간단한 요약 데이터만 저장 (복잡한 배열 제외)
-      final simplifiedData = {
-        'auditStartTime': result.auditStartTime.toIso8601String(),
-        'auditEndTime': result.auditEndTime.toIso8601String(),
-        'totalDocumentsChecked': result.totalDocumentsChecked,
-        'integrityIssuesCount': result.integrityIssues.length,
-        'duplicateDataCount': result.duplicateData.length,
-        'orphanDocumentsCount': result.orphanDocuments.length,
-        'statisticsSummary': result.statisticsSummary,
-        'createdAt': FieldValue.serverTimestamp(),
-        'parentAuditId': adminAuditId,
-      };
-
-      AppLogger.info('[DataAuditService] Simplified data prepared, keys: ${simplifiedData.keys.toList()}');
-
-      final docRef = await _firestore
-          .collection('admin_audit_logs')
-          .doc(adminAuditId)
-          .collection('data_audit_results')
-          .add(simplifiedData);
-
-      AppLogger.info('[DataAuditService] Audit result saved successfully: ${docRef.id}');
-
-      // 텍스트 파일로도 내보내기
-      try {
-        await _exportAuditResultToFile(result, docRef.id);
-        AppLogger.info('[DataAuditService] Text file export completed');
-      } catch (fileError) {
-        AppLogger.warning('[DataAuditService] Text file export failed: $fileError');
-      }
-
-    } catch (e, stackTrace) {
-      AppLogger.error('[DataAuditService] Error saving audit result to admin log: $e');
-      AppLogger.error('[DataAuditService] Stack trace: $stackTrace');
-
-      // 실패 시 기존 방식으로 fallback
-      try {
-        AppLogger.warning('[DataAuditService] Falling back to standalone collection');
-        await _saveAuditResult(result);
-        AppLogger.info('[DataAuditService] Fallback save successful');
-      } catch (fallbackError) {
-        AppLogger.error('[DataAuditService] Fallback also failed: $fallbackError');
-      }
-    }
-  }
-
-  Future<void> _saveAuditResult(DataAuditResult result) async {
-    try {
-      final docRef = await _firestore.collection('data_audit_results').add({
-        ...result.toJson(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // 텍스트 파일로도 내보내기
-      await _exportAuditResultToFile(result, docRef.id);
-
-    } catch (e) {
-      AppLogger.error('[DataAuditService] Error saving audit result: $e');
-    }
-  }
+  // 더 이상 사용하지 않음 - admin_audit_logs의 metadata에 전체 감사 결과 포함
+  // data_audit_results collection은 더 이상 사용하지 않음
 
   // 퀵 감사 (최근 7일간 데이터만)
   Stream<String> quickAudit() async* {
@@ -910,7 +851,14 @@ class DataAuditService {
       if (auditResultsSnapshot.docs.isEmpty) {
         AppLogger.warning('[DataAuditService] No audit results found in subcollection for ${adminLogDoc.id}');
         // admin_audit_logs의 메타데이터에서 요약 정보 추출
-        final metadata = adminLogData['metadata'] as Map<String, dynamic>? ?? {};
+        // metadata가 과거 형식(List)인 경우도 안전 처리
+        Map<String, dynamic> metadata = {};
+        final rawMeta = adminLogData['metadata'];
+        if (rawMeta is Map<String, dynamic>) {
+          metadata = rawMeta;
+        } else if (rawMeta is List && rawMeta.isNotEmpty && rawMeta.last is Map<String, dynamic>) {
+          metadata = Map<String, dynamic>.from(rawMeta.last as Map<String, dynamic>);
+        }
         return {
           'duplicateDataCount': metadata['duplicates'] ?? 0,
           'orphanDocumentsCount': metadata['orphans'] ?? 0,
@@ -1312,6 +1260,95 @@ class DataAuditService {
     } catch (e, stackTrace) {
       AppLogger.error('[DataAuditService] Error exporting audit result: $e');
       AppLogger.error('[DataAuditService] Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  /// 최신 감사 결과를 자동으로 찾아 내보내기 (저장 구조와 무관하게 동작)
+  Future<String?> exportLatestAuditReport() async {
+    try {
+      AppLogger.info('[DataAuditService] Exporting latest audit report (auto)');
+
+      // 1) admin_audit_logs에서 가장 최근 완료된 감사 찾기 (인덱스 없이 클라이언트 필터)
+      final adminLogsSnapshot = await _firestore
+          .collection('admin_audit_logs')
+          .orderBy('timestamp', descending: true)
+          .limit(20)
+          .get();
+
+      final completedAuditDocs = adminLogsSnapshot.docs.where((doc) {
+        final data = doc.data();
+        return data['actionType'] == 'systemMaintenance' && data['status'] == 'completed';
+      }).toList();
+
+      if (completedAuditDocs.isNotEmpty) {
+        final adminLogDoc = completedAuditDocs.first;
+
+        // 해당 감사의 하위 컬렉션에서 최신 결과 문서를 찾음
+        final resultsSnapshot = await _firestore
+            .collection('admin_audit_logs')
+            .doc(adminLogDoc.id)
+            .collection('data_audit_results')
+            .orderBy('createdAt', descending: true)
+            .limit(1)
+            .get();
+
+        if (resultsSnapshot.docs.isNotEmpty) {
+          final doc = resultsSnapshot.docs.first;
+          final data = doc.data();
+
+          final result = DataAuditResult(
+            auditStartTime: DateTime.parse(data['auditStartTime']),
+            auditEndTime: DateTime.parse(data['auditEndTime']),
+            totalDocumentsChecked: data['totalDocumentsChecked'] ?? 0,
+            integrityIssues: (data['integrityIssues'] as List<dynamic>?)?.map((item) {
+              final issueData = item as Map<String, dynamic>;
+              return DataIntegrityIssue(
+                type: issueData['type'],
+                severity: issueData['severity'],
+                description: issueData['description'],
+                location: issueData['location'],
+                metadata: Map<String, dynamic>.from(issueData['metadata']),
+                detectedAt: DateTime.parse(issueData['detectedAt']),
+              );
+            }).toList() ?? [],
+            duplicateData: (data['duplicateData'] as List<dynamic>?)?.map((item) {
+              final dupData = item as Map<String, dynamic>;
+              return DuplicateData(
+                indicatorCode: dupData['indicatorCode'],
+                countryCode: dupData['countryCode'],
+                locations: List<String>.from(dupData['locations']),
+                conflictingData: Map<String, dynamic>.from(dupData['conflictingData']),
+              );
+            }).toList() ?? [],
+            orphanDocuments: (data['orphanDocuments'] as List<dynamic>?)?.map((item) {
+              final orphanData = item as Map<String, dynamic>;
+              return OrphanDocument(
+                path: orphanData['path'],
+                type: orphanData['type'],
+                reason: orphanData['reason'],
+                data: Map<String, dynamic>.from(orphanData['data']),
+              );
+            }).toList() ?? [],
+            statisticsSummary: Map<String, int>.from(data['statisticsSummary'] ?? {}),
+          );
+
+          return await _exportDataAuditResult(result, doc.id);
+        }
+      }
+
+      // 2) Fallback: 기존 단독 컬렉션에서 최신 문서 찾아 내보내기
+      final fallbackLatestId = await getLatestAuditResultId();
+      if (fallbackLatestId != null) {
+        return await exportAuditResultWithFilePicker(fallbackLatestId);
+      }
+
+      AppLogger.warning('[DataAuditService] No audit results available for export');
+      return null;
+
+    } catch (e, st) {
+      AppLogger.error('[DataAuditService] exportLatestAuditReport failed: $e');
+      AppLogger.error(st.toString());
       return null;
     }
   }

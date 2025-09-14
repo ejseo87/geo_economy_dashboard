@@ -132,10 +132,30 @@ class AuditCsvLogger {
     return Uint8List.fromList(csvContent.codeUnits);
   }
 
-  /// 파일명 생성 (타임스탬프 포함)
+  /// 파일명 생성 (한국 시간 기준 YYYYMMDDHHMMSS_actionType_randomNumber 형식)
   String generateFileName(String adminAuditId) {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'audit-details-$adminAuditId-$timestamp.csv';
+    // 한국 시간 (UTC+9)
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final timestamp = '${now.year.toString().padLeft(4, '0')}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}'
+        '${now.hour.toString().padLeft(2, '0')}'
+        '${now.minute.toString().padLeft(2, '0')}'
+        '${now.second.toString().padLeft(2, '0')}';
+
+    // actionType 추출 (adminAuditId에서 actionType 부분 가져오기)
+    String actionType = 'systemMaintenance'; // 기본값
+    if (adminAuditId.contains('_')) {
+      final parts = adminAuditId.split('_');
+      if (parts.length > 1) {
+        actionType = parts[1];
+      }
+    }
+
+    // 임의의 숫자 생성 (3자리)
+    final random = (now.millisecond % 1000).toString().padLeft(3, '0');
+
+    return 'audit-details-${timestamp}_${actionType}_$random.csv';
   }
 
   /// Firebase Storage 경로 생성

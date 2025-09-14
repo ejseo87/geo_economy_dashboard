@@ -277,36 +277,30 @@ class AutomatedCleanupService {
     try {
       final cutoffDate = DateTime.now().subtract(policy.oldDataThreshold);
 
-      // indicators 컬렉션의 오래된 데이터 정리
-      final indicatorsSnapshot = await _firestore
-          .collection('indicators')
+      // series 문서 기준으로 오래된 데이터 정리 (collectionGroup)
+      final limitSize = policy.batchSize > 0 ? policy.batchSize : 100;
+      final seriesSnapshot = await _firestore
+          .collectionGroup('series')
           .where('lastUpdated', isLessThan: Timestamp.fromDate(cutoffDate))
-          .limit(policy.batchSize > 0 ? policy.batchSize : 100)
+          .limit(limitSize)
           .get();
 
-      for (final doc in indicatorsSnapshot.docs) {
-        if (policy.shouldCleanOldData(doc.data(), cutoffDate)) {
-          try {
-            // 하위 컬렉션도 함께 삭제
-            final seriesSnapshot = await doc.reference.collection('series').get();
-            final batch = _firestore.batch();
-
-            for (final seriesDoc in seriesSnapshot.docs) {
-              batch.delete(seriesDoc.reference);
-            }
-            batch.delete(doc.reference);
-
-            await batch.commit();
+      for (final doc in seriesSnapshot.docs) {
+        try {
+          final data = doc.data();
+          if (policy.shouldCleanOldData(data, cutoffDate)) {
+            await doc.reference.delete();
             cleaned++;
-            AppLogger.debug('[AutomatedCleanupService] Cleaned old indicator: ${doc.id}');
-          } catch (e) {
-            AppLogger.warning('[AutomatedCleanupService] Failed to delete old indicator ${doc.id}: $e');
+            if (cleaned % 10 == 0) {
+              AppLogger.debug('[AutomatedCleanupService] Cleaned $cleaned old series docs');
+            }
           }
+        } catch (e) {
+          AppLogger.warning('[AutomatedCleanupService] Failed to delete old series ${doc.reference.path}: $e');
+        }
 
-          // 과부하 방지를 위한 지연
-          if (policy.delayBetweenOperations > Duration.zero) {
-            await Future.delayed(policy.delayBetweenOperations);
-          }
+        if (policy.delayBetweenOperations > Duration.zero) {
+          await Future.delayed(policy.delayBetweenOperations);
         }
       }
     } catch (e) {

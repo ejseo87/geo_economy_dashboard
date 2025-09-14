@@ -450,40 +450,8 @@ class _AdminDataManagementTabState extends ConsumerState<AdminDataManagementTab>
     });
 
     try {
-      // 최신 감사 결과 가져오기
-      final recentResults = await DataAuditService.instance.getRecentAuditResults(limit: 1);
-
-      if (recentResults.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('내보낼 감사 결과가 없습니다. 먼저 데이터 감사를 실행해주세요.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      // 최신 감사 결과 ID 가져오기
-      final auditId = await DataAuditService.instance.getLatestAuditResultId();
-
-      if (auditId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('감사 결과를 찾을 수 없습니다.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // 파일 내보내기
-      print('[DEBUG] Calling exportAuditResultWithFilePicker with ID: $auditId');
-      final savedPath = await DataAuditService.instance.exportAuditResultWithFilePicker(auditId);
-      print('[DEBUG] Export result: $savedPath');
+      // 저장 구조에 상관없이 최신 감사 결과 내보내기 (자동)
+      final savedPath = await DataAuditService.instance.exportLatestAuditReport();
 
       if (mounted) {
         if (savedPath != null && savedPath.isNotEmpty) {
@@ -497,7 +465,7 @@ class _AdminDataManagementTabState extends ConsumerState<AdminDataManagementTab>
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('파일 저장이 실패했습니다.\n개발자 도구나 로그를 확인해 상세한 오류를 확인하세요.'),
+              content: Text('내보낼 감사 결과가 없거나 저장에 실패했습니다.'),
               backgroundColor: Colors.orange,
               duration: const Duration(seconds: 4),
             ),
