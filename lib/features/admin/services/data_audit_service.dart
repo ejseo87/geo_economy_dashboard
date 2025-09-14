@@ -479,23 +479,24 @@ class DataAuditService {
 
   Future<List<DataIntegrityIssue>> _checkDataConsistency() async {
     List<DataIntegrityIssue> issues = [];
-    
+
     try {
+      // 1. indicators collection 확인
       final indicatorsSnapshot = await _firestore.collection('indicators').get();
-      
+
       for (final indicatorDoc in indicatorsSnapshot.docs) {
         final indicatorCode = indicatorDoc.id;
-        
+
         final seriesSnapshot = await _firestore
             .collection('indicators')
             .doc(indicatorCode)
             .collection('series')
             .get();
-        
+
         for (final seriesDoc in seriesSnapshot.docs) {
           final countryCode = seriesDoc.id;
           final data = seriesDoc.data();
-          
+
           // 필수 필드 확인
           if (!data.containsKey('timeSeries')) {
             issues.add(DataIntegrityIssue(
@@ -503,18 +504,18 @@ class DataAuditService {
               severity: 'error',
               description: 'timeSeries 필드 누락',
               location: 'indicators/$indicatorCode/series/$countryCode',
-              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode},
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'timeSeries'},
               detectedAt: DateTime.now(),
             ));
           }
-          
+
           // timeSeries 데이터 유효성 확인
           if (data['timeSeries'] != null) {
             final timeSeries = data['timeSeries'] as List;
             for (int i = 0; i < timeSeries.length; i++) {
               final entry = timeSeries[i];
-              if (entry is! Map<String, dynamic> || 
-                  !entry.containsKey('year') || 
+              if (entry is! Map<String, dynamic> ||
+                  !entry.containsKey('year') ||
                   !entry.containsKey('value')) {
                 issues.add(DataIntegrityIssue(
                   type: 'invalid_data',
@@ -527,7 +528,7 @@ class DataAuditService {
               }
             }
           }
-          
+
           // lastUpdated 필드 확인
           if (!data.containsKey('lastUpdated')) {
             issues.add(DataIntegrityIssue(
@@ -535,18 +536,119 @@ class DataAuditService {
               severity: 'warning',
               description: 'lastUpdated 필드 누락',
               location: 'indicators/$indicatorCode/series/$countryCode',
-              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode},
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'lastUpdated'},
+              detectedAt: DateTime.now(),
+            ));
+          }
+
+          // metadata 필드 확인
+          if (!data.containsKey('metadata')) {
+            issues.add(DataIntegrityIssue(
+              type: 'missing_field',
+              severity: 'warning',
+              description: 'metadata 필드 누락',
+              location: 'indicators/$indicatorCode/series/$countryCode',
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'metadata'},
               detectedAt: DateTime.now(),
             ));
           }
         }
       }
-      
+
+      // 2. countries collection 확인
+      final countriesSnapshot = await _firestore.collection('countries').get();
+
+      for (final countryDoc in countriesSnapshot.docs) {
+        final countryCode = countryDoc.id;
+
+        final indicatorsSnapshot = await _firestore
+            .collection('countries')
+            .doc(countryCode)
+            .collection('indicators')
+            .get();
+
+        for (final indicatorDoc in indicatorsSnapshot.docs) {
+          final indicatorCode = indicatorDoc.id;
+          final data = indicatorDoc.data();
+
+          // 필수 필드 확인
+          if (!data.containsKey('timeSeries')) {
+            issues.add(DataIntegrityIssue(
+              type: 'missing_field',
+              severity: 'error',
+              description: 'timeSeries 필드 누락',
+              location: 'countries/$countryCode/indicators/$indicatorCode',
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'timeSeries'},
+              detectedAt: DateTime.now(),
+            ));
+          }
+
+          // timeSeries 데이터 유효성 확인
+          if (data['timeSeries'] != null) {
+            final timeSeries = data['timeSeries'] as List;
+            for (int i = 0; i < timeSeries.length; i++) {
+              final entry = timeSeries[i];
+              if (entry is! Map<String, dynamic> ||
+                  !entry.containsKey('year') ||
+                  !entry.containsKey('value')) {
+                issues.add(DataIntegrityIssue(
+                  type: 'invalid_data',
+                  severity: 'warning',
+                  description: 'timeSeries 항목이 올바르지 않음 (index: $i)',
+                  location: 'countries/$countryCode/indicators/$indicatorCode',
+                  metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'index': i},
+                  detectedAt: DateTime.now(),
+                ));
+              }
+            }
+          }
+
+          // lastUpdated 필드 확인
+          if (!data.containsKey('lastUpdated')) {
+            issues.add(DataIntegrityIssue(
+              type: 'missing_field',
+              severity: 'warning',
+              description: 'lastUpdated 필드 누락',
+              location: 'countries/$countryCode/indicators/$indicatorCode',
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'lastUpdated'},
+              detectedAt: DateTime.now(),
+            ));
+          }
+
+          // metadata 필드 확인
+          if (!data.containsKey('metadata')) {
+            issues.add(DataIntegrityIssue(
+              type: 'missing_field',
+              severity: 'warning',
+              description: 'metadata 필드 누락',
+              location: 'countries/$countryCode/indicators/$indicatorCode',
+              metadata: {'indicatorCode': indicatorCode, 'countryCode': countryCode, 'fieldName': 'metadata'},
+              detectedAt: DateTime.now(),
+            ));
+          }
+        }
+      }
+
     } catch (e) {
       AppLogger.error('[DataAuditService] Error checking consistency: $e');
     }
-    
+
     return issues;
+  }
+
+  /// 중복 데이터 찾기 (public 메서드)
+  Future<List<DuplicateData>> findDuplicateData() async {
+    return await _findDuplicateData();
+  }
+
+  /// 고아 문서 찾기 (public 메서드)
+  Future<List<OrphanDocument>> findOrphanDocuments() async {
+    return await _findOrphanDocuments();
+  }
+
+  /// 중복 데이터 해결 (public 메서드)
+  Future<bool> resolveDuplicateData(DuplicateData duplicate) async {
+    return await _resolveDuplicateData(duplicate);
   }
 
   Future<int> _getTotalDocumentCount() async {
@@ -594,15 +696,45 @@ class DataAuditService {
   }
 
   bool _areDataEqual(Map<String, dynamic> data1, Map<String, dynamic> data2) {
-    // 핵심 필드들만 비교 (lastUpdated 등은 제외)
-    final keys = ['timeSeries', 'metadata', 'indicatorName', 'countryName'];
-    
-    for (final key in keys) {
+    // 기본 필드들 비교
+    final basicKeys = ['timeSeries', 'indicatorName', 'countryName'];
+
+    for (final key in basicKeys) {
       if (data1[key] != data2[key]) {
         return false;
       }
     }
-    
+
+    // metadata는 lastUpdated를 제외하고 비교
+    final metadata1 = data1['metadata'] as Map<String, dynamic>?;
+    final metadata2 = data2['metadata'] as Map<String, dynamic>?;
+
+    if (metadata1 == null && metadata2 == null) {
+      return true;
+    }
+
+    if (metadata1 == null || metadata2 == null) {
+      return false;
+    }
+
+    // lastUpdated를 제외한 metadata 필드들만 비교
+    final filteredMetadata1 = Map<String, dynamic>.from(metadata1);
+    final filteredMetadata2 = Map<String, dynamic>.from(metadata2);
+
+    filteredMetadata1.remove('lastUpdated');
+    filteredMetadata2.remove('lastUpdated');
+
+    // 남은 메타데이터 필드들 비교
+    if (filteredMetadata1.keys.length != filteredMetadata2.keys.length) {
+      return false;
+    }
+
+    for (final key in filteredMetadata1.keys) {
+      if (filteredMetadata1[key] != filteredMetadata2[key]) {
+        return false;
+      }
+    }
+
     return true;
   }
 

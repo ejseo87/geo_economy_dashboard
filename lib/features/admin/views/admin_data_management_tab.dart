@@ -7,6 +7,9 @@ import '../../../constants/sizes.dart';
 import '../view_models/data_audit_view_model.dart';
 import '../services/data_audit_service.dart';
 import '../services/data_standardization_service.dart';
+import '../providers/data_monitoring_provider.dart';
+import '../widgets/real_time_data_status_card.dart';
+import '../widgets/automated_cleanup_card.dart';
 
 class AdminDataManagementTab extends ConsumerStatefulWidget {
   const AdminDataManagementTab({super.key});
@@ -37,11 +40,13 @@ class _AdminDataManagementTabState extends ConsumerState<AdminDataManagementTab>
         children: [
           _buildAuditControls(),
           const SizedBox(height: Sizes.size24),
-          _buildDataHealthCheck(),
+          const RealTimeDataStatusCard(),
           const SizedBox(height: Sizes.size24),
           _buildDataStandardization(),
           const SizedBox(height: Sizes.size24),
           _buildCleanupControls(),
+          const SizedBox(height: Sizes.size24),
+          const AutomatedCleanupCard(),
           const SizedBox(height: Sizes.size24),
           _buildAuditResults(),
         ],
@@ -128,74 +133,6 @@ class _AdminDataManagementTabState extends ConsumerState<AdminDataManagementTab>
     );
   }
 
-  Widget _buildDataHealthCheck() {
-    final auditState = ref.watch(dataAuditProvider);
-    
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(Sizes.size16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.heartPulse,
-                  color: AppColors.accent,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '데이터 상태',
-                  style: AppTypography.heading3.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Sizes.size16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 2.5,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: [
-                _buildHealthCard(
-                  '중복 문서',
-                  '${auditState.duplicateCount}개',
-                  auditState.duplicateCount == 0 ? AppColors.accent : AppColors.warning,
-                  FontAwesomeIcons.copy,
-                ),
-                _buildHealthCard(
-                  '오래된 데이터',
-                  '${auditState.outdatedCount}개',
-                  auditState.outdatedCount == 0 ? AppColors.accent : AppColors.warning,
-                  FontAwesomeIcons.clock,
-                ),
-                _buildHealthCard(
-                  '고아 문서',
-                  '${auditState.orphanDocumentCount}개',
-                  auditState.orphanDocumentCount == 0 ? AppColors.accent : AppColors.warning,
-                  FontAwesomeIcons.linkSlash,
-                ),
-                _buildHealthCard(
-                  '데이터 일관성',
-                  '${auditState.dataConsistencyPercentage.toStringAsFixed(1)}%',
-                  auditState.dataConsistencyPercentage >= 95.0 ? AppColors.accent :
-                    auditState.dataConsistencyPercentage >= 85.0 ? AppColors.warning : Colors.red,
-                  FontAwesomeIcons.check,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildDataStandardization() {
     return Card(
