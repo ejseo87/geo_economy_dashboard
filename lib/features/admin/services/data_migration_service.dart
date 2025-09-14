@@ -50,7 +50,7 @@ class DataMigrationService {
           
           if (!dryRun) {
             // 3a. 국가 중심 구조에 저장 (비정규화)
-            final countryData = migrationData['country'] as Map<String, dynamic>?;
+            final countryData = migrationData['country'];
             if (countryData != null) {
               await _saveToCountryStructure(countryData, countryCode, indicatorCode);
               final migrated = result['migrated'] as Map<String, dynamic>;
@@ -58,7 +58,7 @@ class DataMigrationService {
             }
             
             // 3b. 지표 중심 구조에 저장 (정규화)
-            final seriesData = migrationData['series'] as Map<String, dynamic>?;
+            final seriesData = migrationData['series'];
             if (seriesData != null) {
               await _saveToIndicatorStructure(seriesData, indicatorCode, countryCode);
               final migrated = result['migrated'] as Map<String, dynamic>;

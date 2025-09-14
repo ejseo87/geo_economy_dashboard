@@ -96,6 +96,20 @@ class AdminAuditService {
 
   static const String _collectionName = 'admin_audit_logs';
 
+  // Document ID 생성: YYYYMMDDHHMMSS_{AdminActionType}_{randomSuffix}
+  String _generateDocumentId(DateTime timestamp, AdminActionType actionType) {
+    final formattedTime = timestamp.toUtc().toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .replaceAll('T', '')
+        .substring(0, 14); // YYYYMMDDHHMMSS
+
+    // 밀리초를 이용해 같은 초 내 중복 방지
+    final millis = timestamp.millisecondsSinceEpoch.toString().substring(10); // 마지막 3자리
+
+    return '${formattedTime}_${actionType.name}_$millis';
+  }
+
   Future<String> logAdminAction({
     required AdminActionType actionType,
     required String description,
@@ -110,14 +124,17 @@ class AdminAuditService {
         return '';
       }
 
+      final now = DateTime.now();
+      final docId = _generateDocumentId(now, actionType);
+
       final entry = AdminAuditEntry(
-        id: _firestore.collection(_collectionName).doc().id,
+        id: docId,
         userId: user.uid,
         userEmail: user.email ?? 'unknown',
         actionType: actionType,
         status: status,
         description: description,
-        timestamp: DateTime.now(),
+        timestamp: now,
         metadata: metadata,
         errorMessage: errorMessage,
       );

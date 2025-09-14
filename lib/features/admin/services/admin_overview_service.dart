@@ -182,9 +182,9 @@ class AdminOverviewService {
             .collection('series')
             .get();
 
+        bool hasActualData = false;
+
         if (seriesSnapshot.docs.isNotEmpty) {
-          indicatorsWithData++;
-          
           for (final seriesDoc in seriesSnapshot.docs) {
             // 국가 코드 추가 (series document ID가 국가 코드)
             uniqueCountries.add(seriesDoc.id);
@@ -192,17 +192,25 @@ class AdminOverviewService {
             final data = seriesDoc.data();
             if (data['timeSeries'] != null) {
               final timeSeries = data['timeSeries'] as List;
-              totalDataPoints += timeSeries.length;
-              
-              // 마지막 업데이트 시간 확인
-              if (data['lastUpdated'] != null) {
-                final docLastUpdated = (data['lastUpdated'] as Timestamp).toDate();
-                if (lastUpdated == null || docLastUpdated.isAfter(lastUpdated)) {
-                  lastUpdated = docLastUpdated;
+              if (timeSeries.isNotEmpty) {
+                hasActualData = true;
+                totalDataPoints += timeSeries.length;
+                
+                // 마지막 업데이트 시간 확인
+                if (data['lastUpdated'] != null) {
+                  final docLastUpdated = (data['lastUpdated'] as Timestamp).toDate();
+                  if (lastUpdated == null || docLastUpdated.isAfter(lastUpdated)) {
+                    lastUpdated = docLastUpdated;
+                  }
                 }
               }
             }
           }
+        }
+
+        // 실제 시계열 데이터가 있는 경우에만 카운트
+        if (hasActualData) {
+          indicatorsWithData++;
         }
       }
 

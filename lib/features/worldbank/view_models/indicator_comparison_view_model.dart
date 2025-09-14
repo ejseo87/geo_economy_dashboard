@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/country_indicator.dart';
 import '../widgets/indicator_comparison_card.dart';
-import '../services/integrated_data_service.dart';
 import '../../../common/logger.dart';
 
 part 'indicator_comparison_view_model.g.dart';

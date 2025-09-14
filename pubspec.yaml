@@ -55,6 +55,7 @@ dependencies:
   # 카드 공유/이미지 내보내기
   share_plus: ^10.1.2
   path_provider: ^2.1.5
+  file_picker: ^8.1.2
   flutter_widget_from_html: ^0.16.0
   # 스크린샷 및 이미지 캡처
   widgets_to_image: ^2.0.1
